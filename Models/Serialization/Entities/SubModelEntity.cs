@@ -1,10 +1,14 @@
-﻿using BlurFileFormats.SerializationFramework.Attributes;
+﻿using BlurFileFormats.Models.Serialization.Entities.General;
+using BlurFileFormats.SerializationFramework.Attributes;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BlurFileFormats.Models.Serialization.Entities;
 
 public class SubModelEntity
 {
+    [AllowNull]
     [Read] public MatrixEntity TransformMatrix { get; set; }
+    [AllowNull]
     [Read] public BoundingBoxEntity BoundingBox { get; set; }
     [Read] public int NameIndex { get; set; }
     [Read] public int ModelIndex { get; set; }

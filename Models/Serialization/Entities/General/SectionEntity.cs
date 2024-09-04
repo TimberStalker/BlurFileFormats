@@ -1,8 +1,8 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
 
-namespace BlurFileFormats.Models.Serialization.Entities;
+namespace BlurFileFormats.Models.Serialization.Entities.General;
 
-public class HeaderEntity
+public class SectionEntity
 {
     [CString]
     [Length(8)]
@@ -10,5 +10,4 @@ public class HeaderEntity
     [Read] public int Length { get; set; }
     [Read] public short UnknownA { get; set; }
     [Read] public short UnknownB { get; set; }
-    [Read] public int Depth { get; set; }
 }

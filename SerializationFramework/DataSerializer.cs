@@ -7,13 +7,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using SwitchAttribute = BlurFileFormats.SerializationFramework.Attributes.SwitchAttribute;
 
 namespace BlurFileFormats.SerializationFramework;
 public static class DataSerializer
 {
     public static T Deserialize<T>(Stream stream) where T : new()
     {
-        using var reader = new BinaryReader(stream);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, true);
         return (T)Deserialize(typeof(T), reader);
     }
     public static object Deserialize(Type t, Stream stream)
@@ -31,7 +32,6 @@ public static class DataSerializer
                 .Select(p => new { Prop = (object)p, Attr = p.GetCustomAttribute<ReadAttribute>() }))
             .Where(p => p.Attr is not null)
             .OrderBy(p => p.Attr!.Order);
-
 
         object value = Activator.CreateInstance(t)!;
         setValue?.Invoke(value);
@@ -62,14 +62,32 @@ public static class DataSerializer
         tree.Remove(value);
         return value;
     }
-
-    private static void ReadProperty(BinaryReader reader, List<object> tree, object value, PropertyInfo? property)
+    public static string CreateReaderProgram<T>(string language) where T : new() => CreateReader(typeof(T), language);
+    static string CreateReader(Type t, string language)
+    {
+        return "";
+    }
+    private static void ReadProperty(BinaryReader reader, List<object> tree, object value, PropertyInfo property)
     {
         Func<object> action;
         Type propertyType = property.PropertyType;
+
+
+        var getAttr = property.GetCustomAttribute<GetAttribute>();
+
+        if(getAttr is not null)
+        {
+            var resultValue = getAttr.GetTarget(value, tree);
+            property.SetValue(value, resultValue);
+            return;
+        }
+
         if (propertyType.IsArray)
         {
             propertyType = propertyType.GetElementType()!;
+        } else if(propertyType.IsEnum)
+        {
+            propertyType = propertyType.GetEnumUnderlyingType()!;
         }
         if (propertyType == typeof(string))
         {
@@ -121,6 +139,30 @@ public static class DataSerializer
                     }
                 }
             };
+        }
+        else if (propertyType == typeof(bool))
+        {
+            var lengthAttr = property.PropertyType.IsArray ? null : property.GetCustomAttribute<LengthAttribute>();
+            if(lengthAttr is null)
+            {
+                action = () => reader.ReadByte() > 0;
+            }
+            else
+            {
+                var length = lengthAttr.GetLength(value, tree);
+                action = () =>
+                {
+                    bool isTrue = false;
+                    for (int i = 0; i < length; i++)
+                    {
+                        if (reader.ReadByte() > 0)
+                        {
+                            isTrue = true;
+                        }
+                    }
+                    return isTrue;
+                };
+            }
         }
         else if (propertyType == typeof(byte))
         {
@@ -229,7 +271,30 @@ public static class DataSerializer
         }
         else
         {
-            action = () => Deserialize(propertyType, reader, o =>
+            var switchType = property.GetCustomAttribute<SwitchAttribute>();
+
+            var objType = propertyType;
+            if(switchType is not null)
+            {
+                var target = switchType.GetTarget(value, tree);
+
+                objType =
+                    propertyType.Assembly.GetTypes()
+                    .Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract)
+                    .Select(t => new { Type = t, Attr = t.GetCustomAttribute<TargetAttribute>() })
+                    .Where(t => t.Attr is not null)
+                    .FirstOrDefault(t => t.Attr!.Target.Equals(target))?.Type;
+                if(objType is null)
+                {
+                    objType = propertyType.Assembly.GetTypes().Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract).FirstOrDefault(t => t.GetCustomAttribute<DefaultAttribute>() != null);
+                    if(objType is null)
+                    {
+                        throw new Exception($"No Matching type with target '{target}'");
+                    }
+                }
+            }
+
+            action = () => Deserialize(objType, reader, o =>
             {
                 if (!property.PropertyType.IsArray)
                 {
@@ -252,7 +317,19 @@ public static class DataSerializer
         }
         else
         {
-            property.SetValue(value, action());
+            var actionResult = action();
+            if (property.SetMethod != null)
+            {
+                property.SetValue(value, actionResult);
+            }
+            else
+            {
+                var test = property.GetValue(value);
+                if (test?.Equals(actionResult) != true)
+                {
+                    throw new Exception($"Expected to read '{test}' but instead read '{actionResult}'");
+                }
+            }
         }
     }
 
@@ -263,6 +340,11 @@ public static class DataSerializer
             Debug.WriteLine("null");
             offset = false;
         }
+        else if(value is Enum)
+        {
+            Debug.WriteLine(value.ToString());
+            offset = false;
+        }
         else if (value is string)
         {
             Debug.Write("\"");
@@ -271,19 +353,19 @@ public static class DataSerializer
             offset = false;
         } else if(value is int ni)
         {
-            Debug.WriteLine($"{ni:X8}-{ni}");
+            Debug.WriteLine($"{ni:X8} : {ni}");
             offset = false;
         } else if(value is long nl)
         {
-            Debug.WriteLine($"{nl:X16}-{nl}");
+            Debug.WriteLine($"{nl:X16} : {nl}");
             offset = false;
         } else if(value is short ns)
         {
-            Debug.WriteLine($"{ns:X4}-{ns}");
+            Debug.WriteLine($"{ns:X4} : {ns}");
             offset = false;
         } else if(value is byte nb)
         {
-            Debug.WriteLine($"{nb:X2}-{nb}");
+            Debug.WriteLine($"{nb:X2} : {nb}");
             offset = false;
         }
         else if (value is Array a)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,8 @@ public class CPModelEntity
 {
     [FileSpecifier("  CP")]
     [Length(4)]
-    [Read] public string File { get; set; } = "";
+    [AllowNull]
+    [Read] public string File { get; set; }
+    [AllowNull]
     [Read] public ModelEntity Model { get; set; }
 }

@@ -30,56 +30,6 @@ public class LengthAttribute : Attribute
             return Length;
         }
 
-        return Convert.ToInt32(GetValue(value, Path, tree));
-    }
-
-    private static object? GetValue(object value, string path, List<object> tree)
-    {
-        var pathItems = path.Split('.');
-        var lengthObj = value;
-        var lengthProperty = value.GetType().GetProperty(pathItems[0]);
-        int pathIndex = 1;
-        if (lengthProperty is null)
-        {
-            if (pathItems.Length <= 1)
-            {
-                throw new Exception("Path must contain a direct property or a qualified property of a parent type.");
-            }
-            int treeIndex;
-            for (treeIndex = tree.Count - 1; treeIndex >= 0; treeIndex--)
-            {
-                var item = tree[treeIndex];
-                if (item.GetType().Name == pathItems[0])
-                {
-                    lengthProperty = item.GetType().GetProperty(pathItems[1]);
-                    if (lengthProperty is not null)
-                    {
-                        lengthObj = item;
-                        pathIndex = 2;
-                        break;
-                    }
-                }
-            }
-            if (lengthProperty is null)
-            {
-                throw new Exception("Path is not valid.");
-            }
-        }
-        for (; pathIndex < pathItems.Length; pathIndex++)
-        {
-            lengthObj = lengthProperty.GetValue(lengthObj);
-
-            if (lengthObj is null)
-            {
-                throw new Exception("Path is not valid.");
-            }
-
-            lengthProperty = lengthObj.GetType().GetProperty(pathItems[pathIndex]);
-            if (lengthProperty is null)
-            {
-                throw new Exception("Path is not valid.");
-            }
-        }
-        return lengthProperty.GetValue(lengthObj);
+        return Convert.ToInt32(DataPath.GetValue(Path, value, tree));
     }
 }

@@ -1,6 +1,6 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
 
-namespace BlurFileFormats.Models.Serialization.Entities;
+namespace BlurFileFormats.Models.Serialization.Entities.General;
 
 public class VectorEntity
 {

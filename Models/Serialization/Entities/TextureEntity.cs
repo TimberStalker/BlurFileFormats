@@ -1,4 +1,5 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace BlurFileFormats.Models.Serialization.Entities;
@@ -6,12 +7,14 @@ namespace BlurFileFormats.Models.Serialization.Entities;
 public class TextureEntity
 {
     [Encoding("utf-8")]
+    [AllowNull]
     [Read] public string FileName { get; set; }
     [Read] public int Unknown1 { get; set; }
     [Read] public int Unknown2 { get; set; }
     [Read] public int Unknown3 { get; set; }
     [Read] public int Unknown4 { get; set; }
     [Encoding("utf-8")]
+    [AllowNull]
     [Read] public string FileName2 { get; set; }
     [Read] public int Unknown5 { get; set; }
     [Read] public int Unknown6 { get; set; }
@@ -36,6 +39,7 @@ public class TextureEntity
 
     [Read] public int Mipmaps { get; set; }
     [Length(4)]
+    [AllowNull]
     [Read] public string DxtVersion { get; set; }
 
     [Read] public int Unknown18 { get; set; }
@@ -43,5 +47,6 @@ public class TextureEntity
     public int TextureLength => Length - 0x1C;
 
     [Length(nameof(TextureLength))]
+    [AllowNull]
     [Read] public byte[] TextureBytes { get; set; }
 }

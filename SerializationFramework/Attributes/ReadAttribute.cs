@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework.Attributes;
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = false)]
-public class ReadAttribute : Attribute
+public sealed class ReadAttribute : Attribute
 {
     public int Order { get; }
     public ReadAttribute([CallerLineNumber] int order = 0)
@@ -16,29 +16,61 @@ public class ReadAttribute : Attribute
     }
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class CStringAttribute : Attribute
+public sealed class CStringAttribute : Attribute
+{
+}
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class DefaultAttribute : Attribute
 {
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class PositionAttribute : Attribute
+public sealed class SwitchAttribute : Attribute
 {
-}
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class EncodingAttribute : Attribute
-{
-    public Encoding Encoding { get; }
-    public EncodingAttribute(string encoding)
+    public string Path { get; }
+    public SwitchAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "")
     {
-        Encoding = Encoding.GetEncoding(encoding);
+        expression = expression.Trim();
+        if (expression.StartsWith("nameof("))
+        {
+            Path = expression[7..^1].Replace(" ", "");
+        }
+        else
+        {
+            Path = path;
+        }
+    }
+    public object GetTarget(object value, List<object> tree)
+    {
+        return DataPath.GetValue(Path, value, tree)!;
     }
 }
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class FileSpecifierAttribute : Attribute
+public sealed class GetAttribute : Attribute
 {
-    public string Specifier { get; }
-    public FileSpecifierAttribute(string specifier)
+    public string Path { get; }
+    public GetAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "")
     {
-        Specifier = specifier;
+        expression = expression.Trim();
+        if (expression.StartsWith("nameof("))
+        {
+            Path = expression[7..^1].Replace(" ", "");
+        }
+        else
+        {
+            Path = path;
+        }
     }
-
+    public object GetTarget(object value, List<object> tree)
+    {
+        return DataPath.GetValue(Path, value, tree)!;
+    }
+}
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public sealed class TargetAttribute : Attribute
+{
+    public object Target { get; }
+    public TargetAttribute(object target)
+    {
+        Target = target;
+    }
 }
