@@ -5,11 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BlurFormats.Utils;
+namespace BlurFileFormats.Utils;
 public class FlaskEncoding : Encoding
 {
     public int ChunkSize { get; set; } = 4;
-
 
     public override int GetByteCount(char[] chars, int index, int count)
     {

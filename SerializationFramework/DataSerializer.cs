@@ -19,7 +19,7 @@ public static class DataSerializer
     }
     public static object Deserialize(Type t, Stream stream)
     {
-        using var reader = new BinaryReader(stream);
+        using var reader = new BinaryReader(stream, Encoding.ASCII, true);
         return Deserialize(t, reader);
     }
     static object Deserialize(Type t, BinaryReader reader, Action<object>? setValue = null, List<object>? tree = null)
@@ -93,7 +93,7 @@ public static class DataSerializer
         {
             action = () =>
             {
-                var encoding = property.GetCustomAttribute<EncodingAttribute>()?.Encoding ?? Encoding.ASCII;
+                var encoding = property.GetCustomAttribute<EncodingAttribute>()?.GetEncoding(value, tree) ?? Encoding.ASCII;
                 var cstring = property.GetCustomAttribute<CStringAttribute>();
                 var lengthAttr = property.PropertyType.IsArray ? null : property.GetCustomAttribute<LengthAttribute>();
 
@@ -444,6 +444,7 @@ public static class DataSerializer
             }
             foreach (var property in value.GetType().GetProperties())
             {
+                if (property.GetCustomAttribute<IgnorePrintAttribute>() is not null) continue;
                 Debug.Write(property.Name);
                 Debug.Write(": ");
                 Debug.IndentLevel++;

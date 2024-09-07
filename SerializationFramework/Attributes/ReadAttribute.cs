@@ -19,6 +19,10 @@ public sealed class ReadAttribute : Attribute
 public sealed class CStringAttribute : Attribute
 {
 }
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+public sealed class EndianSwitchAttribute : Attribute
+{
+}
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public sealed class DefaultAttribute : Attribute
 {

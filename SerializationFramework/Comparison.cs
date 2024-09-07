@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BlurFileFormats.SerializationFramework.Attributes;
+using System;
+using System.Reflection;
 
 namespace BlurFileFormats.SerializationFramework;
 
@@ -17,7 +19,7 @@ public class Comparison
     public static Comparison Compare<T>(params T[] values) => Compare((Array)values);
     public static Comparison Compare(Array values)
     {
-        if (values.Length <= 1)
+        if (values.Length < 1)
         {
             return new Comparison(true, values.Cast<object>().ToArray(), []);
         }
@@ -31,7 +33,7 @@ public class Comparison
             var method = type.GetMethod(nameof(Equals), [type])!;
 
             var compareValue = values.GetValue(0);
-            for (int i = 1; i < values.Length; i++)
+            for (int i = 0; i < values.Length; i++)
             {
                 isEqual = (bool)method.Invoke(compareValue, [values.GetValue(i)])!;
                 if (!isEqual)
@@ -74,6 +76,7 @@ public class Comparison
             var properties = type.GetProperties();
             foreach (var property in properties)
             {
+                if (property.GetCustomAttribute<IgnorePrintAttribute>() is not null) continue;
                 Dictionary<Type, int> types = [];
                 for (int i = 0; i < values.Length; i++)
                 {

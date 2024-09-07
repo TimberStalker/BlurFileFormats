@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BlurFormats.Utils;
+namespace BlurFileFormats.Utils;
 public class EndiannessAwareBinaryReader : BinaryReader
 {
     public Endianness Endianness { get; set; } = Endianness.Little;
