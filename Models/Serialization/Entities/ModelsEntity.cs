@@ -8,6 +8,7 @@ public class ModelsEntity
 {
     [AllowNull]
     [Read] public SectionEntity Section { get; set; }
+
     [Length(nameof(ModelDataEntity.ModelCount))]
     [AllowNull]
     [Read] public SubModelEntity[] Models { get; set; }

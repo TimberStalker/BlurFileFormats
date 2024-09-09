@@ -7,7 +7,7 @@ public class XtEnumValue : IXtValue
 {
     public XtEnumType XtType { get; }
 
-    public uint Value = 0;
+    public uint Value { get; set; } = 0;
     IXtType IXtValue.Type => XtType;
     object IXtValue.Value => Value;
     public XtEnumValue(XtEnumType xtType)
