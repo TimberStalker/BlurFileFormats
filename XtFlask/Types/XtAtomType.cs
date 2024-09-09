@@ -39,7 +39,7 @@ public abstract class XtAtomType<T> : IXtType where T : notnull
     public abstract T DefaultValue();
 
 
-    IXtValue IXtType.CreateValue() => CreateValue();
+    IXtValue IXtType.CreateDefault() => CreateValue();
 
     public XtAtomValue<T> CreateValue() =>
         new (this, DefaultValue());

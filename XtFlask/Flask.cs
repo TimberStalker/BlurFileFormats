@@ -4,7 +4,6 @@ using BlurFileFormats.XtFlask.Components;
 using BlurFileFormats.XtFlask.Entities;
 using BlurFileFormats.XtFlask.Types;
 using BlurFileFormats.XtFlask.Types.Fields;
-using BlurFileFormats.XtFlask.Types.Fields.Behaviors;
 using BlurFileFormats.XtFlask.Values;
 using System;
 using System.Collections.Generic;
@@ -42,7 +41,7 @@ public static class Flask
         var dataReader = new BinaryReader(dataStream);
         var encoding = new FlaskEncoding();
 
-        List<ValueResolver.IResolverItem> resolveValues = [];
+        List<ValueResolver.ResolverContext> resolveValues = [];
 
         for (int i = 0; i < flaskEntity.Refs.Length; i++)
         {
@@ -189,29 +188,27 @@ public static class Flask
         public void Add(FlaskFieldEntity field)
         {
             var fieldType = Types[field.Type];
-            IFieldBehavior behavior;
             switch (field.Behavior)
             {
                 case FieldBehavior.Atom:
                 case FieldBehavior.Enum:
                 case FieldBehavior.Flags:
                 case FieldBehavior.Struct:
-                    behavior = new ObjectFieldBehavior();
                     break;
                 case FieldBehavior.Pointer:
-                    behavior = new PointerFieldBehavior();
+                    fieldType = new XtPointerType(fieldType);
                     break;
                 case FieldBehavior.Handle:
-                    behavior = new HandleFieldBehavior();
+                    fieldType = new XtHandleType(fieldType);
                     break;
                 default:
                     throw new NotSupportedException();
             }
             if(field.Array)
             {
-                behavior = new ArrayFieldBehavior(behavior);
+                fieldType = new XtArrayType(fieldType);
             }
-            Type.Fields.Add(new XtField(Type, fieldType, GetCString(Strings, field.Name), behavior));
+            Type.Fields.Add(new XtField(Type, fieldType, GetCString(Strings, field.Name)));
         }
     }
     class EnumFieldHandler : IFieldHandler
@@ -234,28 +231,20 @@ public static class Flask
 public class ValueResolver
 {
     public string Strings { get; }
-    public List<IResolverItem> ResolveItems { get; }
+    public List<ResolverContext> ResolveItems { get; }
     public IReadOnlyList<IXtRef> References { get; }
     public List<List<IRecordComponent>> RefRecords { get; }
 
-    public ValueResolver(string strings, List<IResolverItem> resolveItems, IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
+    public ValueResolver(string strings, List<ResolverContext> resolveItems, IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
     {
         Strings = strings;
         ResolveItems = resolveItems;
         References = references;
         RefRecords = refRecords;
     }
-    public void AddPointer(XtStructValue value, XtField field, BinaryReader reader)
+    public void AddResolver(IResolverItem resolverItem)
     {
-        ResolveItems.Add(PointerItem.Read(References, RefRecords, value, field, reader));
-    }
-    public void AddHandle(XtStructValue value, XtField field, BinaryReader reader)
-    {
-        ResolveItems.Add(HandleItem.Read(References, RefRecords, value, field, reader));
-    }
-    public void AddArray(XtStructValue value, XtField field, BinaryReader reader)
-    {
-        ResolveItems.Add(ArrayItem.Read(References, RefRecords, value, field, reader));
+        ResolveItems.Add(new ResolverContext(resolverItem, References, RefRecords));
     }
     public string GetString(uint index)
     {
@@ -264,37 +253,25 @@ public class ValueResolver
     }
     public static string GetCString(string s, int offset) => string.Concat(s.Skip(offset).TakeWhile(c => c != '\0'));
 
-    public interface IResolverItem
+    public class ResolverContext
     {
-        public void Resolve();
-    }
 
-    public record PointerItem(IReadOnlyList<IXtRef> References, List<List<IRecordComponent>> RefRecords, XtStructValue Value, XtField Field, ushort Component, ushort Offset) : IResolverItem
-    {
-        public static PointerItem Read(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords, XtStructValue value, XtField field, BinaryReader reader)
+        IResolverItem Resolver { get; }
+        IReadOnlyList<IXtRef> References { get; }
+        List<List<IRecordComponent>> RefRecords { get; }
+        public ResolverContext(IResolverItem resolver, IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
         {
-            return new PointerItem(references, refRecords, value, field, reader.ReadUInt16(), reader.ReadUInt16());
+            Resolver = resolver;
+            References = references;
+            RefRecords = refRecords;
         }
-
         public void Resolve()
         {
-            if (Component == ushort.MaxValue || Offset == ushort.MaxValue) return;
-            Value.SetField(Field, RefRecords[Component][Offset].GetValue(References, RefRecords));
+            Resolver.Resolve(References, RefRecords);
         }
     }
-    public record HandleItem(IReadOnlyList<IXtRef> References, List<List<IRecordComponent>> RefRecords, XtStructValue Value, XtField Field, uint Id) : IResolverItem
-    {
-        public static HandleItem Read(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords, XtStructValue value, XtField field, BinaryReader reader)
-        {
-            return new HandleItem(references, refRecords, value, field, reader.ReadUInt32());
-        }
 
-        public void Resolve()
-        {
-            if (Id == uint.MaxValue) return;
-            Value.SetField(Field, new XtRefValue(References[(int)Id]));
-        }
-    }
+    
     public record ArrayItem(IReadOnlyList<IXtRef> References, List<List<IRecordComponent>> RefRecords, XtStructValue Value, XtField Field, ushort Component, ushort Offset, uint Length) : IResolverItem
     {
         public static ArrayItem Read(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords, XtStructValue value, XtField field, BinaryReader reader)
@@ -302,7 +279,7 @@ public class ValueResolver
             return new ArrayItem(references, refRecords, value, field, reader.ReadUInt16(), reader.ReadUInt16(), reader.ReadUInt32());
         }
 
-        public void Resolve()
+        public void Resolve(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
         {
             var array = new XtArrayValue(Value.XtType);
             for(int i = Offset; i < Length; i++)
@@ -313,17 +290,21 @@ public class ValueResolver
         }
     }
 }
-public interface IXtRef
+public interface IResolverItem
+{
+    public void Resolve(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords);
+}
+public interface IXtRef : IXtValue
 {
     public uint Id { get; }
-    public IXtType Type { get; }
-    public IXtValue Value { get; }
+    new public IXtValue Value { get; }
 }
 public class XtRef : IXtRef
 {
     public uint Id { get; set; }
     public IXtValue Value { get; set; }
-    IXtType IXtRef.Type => Value.Type;
+    IXtType IXtValue.Type => Value.Type;
+    object IXtValue.Value => Value;
 
     public XtRef(uint id, IXtValue value)
     {
@@ -331,11 +312,22 @@ public class XtRef : IXtRef
         Value = value;
     }
 }
+public class XtRefNull : IXtRef
+{
+    public static XtRefNull Instance { get; } = new XtRefNull();
+
+    public uint Id => 0;
+    public IXtValue Value => XtNullValue.Instance;
+    public IXtType Type => Value.Type;
+    object IXtValue.Value => Value;
+}
 public class XtRefHandle : IXtRef
 {
     public uint Id { get; set; }
     public IXtType Type { get; }
     public IXtValue Value => XtNullValue.Instance;
+
+    object IXtValue.Value => Value;
 
     public XtRefHandle(uint id, IXtType type)
     {

@@ -22,16 +22,16 @@ public class XtStructType : IXtType
             .SelectMany(b => b.GetFields())
             .Concat(Fields);
 
-    IXtValue IXtType.CreateValue() => CreateValue();
+    IXtValue IXtType.CreateDefault() => CreateValue();
     public XtStructValue CreateValue() => new XtStructValue(this);
 
     IXtValue IXtType.ReadValue(BinaryReader reader, ValueResolver resolver) => ReadValue(reader, resolver);
     public XtStructValue ReadValue(BinaryReader reader, ValueResolver resolver)
     {
         var value = CreateValue();
-        foreach (var field in value.Values)
+        foreach (var fieldItem in value.Values)
         {
-            value.SetField(field.Field, field.Field.ReadValue(value, reader, resolver));
+            value.SetField(fieldItem.Field, fieldItem.Field.Type.ReadValue(reader, resolver));
         }
         return value;
     }

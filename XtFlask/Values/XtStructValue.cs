@@ -18,7 +18,7 @@ public class XtStructValue : IXtValue, IXtMultiValue
         XtType = xtType;
         Values = xtType
             .GetFields()
-            .Select(f => new XtStructValueItem(f, f.CreateDefault()))
+            .Select(f => new XtStructValueItem(f, f.Type.CreateDefault()))
             .ToList();
     }
 

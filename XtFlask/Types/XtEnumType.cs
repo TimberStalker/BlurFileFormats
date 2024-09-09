@@ -14,7 +14,7 @@ public class XtEnumType : IXtEnumType
     }
 
     public XtEnumValue CreateValue() => new XtEnumValue(this);
-    IXtValue IXtType.CreateValue() => CreateValue();
+    IXtValue IXtType.CreateDefault() => CreateValue();
 
     IXtValue IXtType.ReadValue(BinaryReader reader, ValueResolver resolver) => ReadValue(reader, resolver);
     public XtEnumValue ReadValue(BinaryReader reader, ValueResolver resolver)

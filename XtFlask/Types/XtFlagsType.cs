@@ -12,7 +12,7 @@ public class XtFlagsType : IXtEnumType
     {
         Name = name;
     }
-    IXtValue IXtType.CreateValue() => CreateValue();
+    IXtValue IXtType.CreateDefault() => CreateValue();
     public XtFlagsValue CreateValue() => new XtFlagsValue(this);
 
     IXtValue IXtType.ReadValue(BinaryReader reader, ValueResolver resolver) => ReadValue(reader, resolver);
