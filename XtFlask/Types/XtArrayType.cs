@@ -10,16 +10,16 @@ using System.Threading.Tasks;
 namespace BlurFileFormats.XtFlask.Types;
 public class XtArrayType : IXtType
 {
-    public IXtType BaseType { get; }
-    public string Name => $"{BaseType.Name}[]";
+    public IXtType ElementType { get; }
+    public string Name => $"{ElementType.Name}[]";
 
     public XtArrayType(IXtType baseType)
     {
-        BaseType = baseType;
+        ElementType = baseType;
     }
 
     IXtValue IXtType.CreateDefault() => CreateDefault();
-    public XtArrayValue CreateDefault() => new XtArrayValue(BaseType);
+    public XtArrayValue CreateDefault() => new XtArrayValue(this);
 
     public IXtValue ReadValue(BinaryReader reader, ValueResolver resolver)
     {
@@ -27,6 +27,7 @@ public class XtArrayType : IXtType
         resolver.AddResolver(new ArrayItem(array, reader.ReadUInt16(), reader.ReadUInt16(), reader.ReadUInt32()));
         return array;
     }
+
     public record ArrayItem(XtArrayValue Value, ushort Component, ushort Offset, uint Length) : IResolverItem
     {
         public void Resolve(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)

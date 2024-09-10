@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 namespace BlurFileFormats.XtFlask.Values;
 public interface IXtReferenceValue : IXtValue
 {
+    IXtValue Reference { get; }
 }
 public class XtPointerValue : IXtReferenceValue
 {
@@ -25,6 +26,8 @@ public class XtHandleValue : IXtReferenceValue
     public IXtType Type => Reference.Type;
     public object Value => Reference.Value;
     public IXtRef Reference { get; set; }
+
+    IXtValue IXtReferenceValue.Reference => Reference.Value;
 
     public XtHandleValue(IXtRef reference)
     {

@@ -270,25 +270,6 @@ public class ValueResolver
             Resolver.Resolve(References, RefRecords);
         }
     }
-
-    
-    public record ArrayItem(IReadOnlyList<IXtRef> References, List<List<IRecordComponent>> RefRecords, XtStructValue Value, XtField Field, ushort Component, ushort Offset, uint Length) : IResolverItem
-    {
-        public static ArrayItem Read(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords, XtStructValue value, XtField field, BinaryReader reader)
-        {
-            return new ArrayItem(references, refRecords, value, field, reader.ReadUInt16(), reader.ReadUInt16(), reader.ReadUInt32());
-        }
-
-        public void Resolve(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
-        {
-            var array = new XtArrayValue(Value.XtType);
-            for(int i = Offset; i < Length; i++)
-            {
-                array.Values.Add(new XtArrayValueItem(RefRecords[Component][i].GetValue(References, RefRecords)));
-            }
-            Value.SetField(Field, array);
-        }
-    }
 }
 public interface IResolverItem
 {
