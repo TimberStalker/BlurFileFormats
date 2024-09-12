@@ -1,6 +1,8 @@
-﻿namespace BlurFileFormats.SerializationFramework;
+﻿using BlurFileFormats.SerializationFramework.Command;
+
+namespace BlurFileFormats.SerializationFramework;
 
 public interface IRead
 {
-    void Read(BinaryReader reader, ReadTree tree);
+    void Build(List<ISerializationCommand> commands);
 }

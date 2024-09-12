@@ -1,5 +1,18 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Data;
+using System.Reflection;
+using System.Reflection.PortableExecutable;
+using System.Text;
 using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFramework.Command;
+using BlurFileFormats.SerializationFramework.Command.Meta;
+using BlurFileFormats.SerializationFramework.Command.Meta.Position;
+using BlurFileFormats.SerializationFramework.Command.Numeric;
+using BlurFileFormats.SerializationFramework.Command.Sequence.Strings;
+using BlurFileFormats.SerializationFramework.Commands;
+using BlurFileFormats.SerializationFramework.Commands.Meta.Position;
+using BlurFileFormats.SerializationFramework.Commands.Sequence;
+using BlurFileFormats.SerializationFramework.Commands.Structures;
 
 namespace BlurFileFormats.SerializationFramework;
 
@@ -11,274 +24,238 @@ public class ReadProperty : IRead
     {
         Property = property;
     }
-
-    public void Read(BinaryReader reader, ReadTree tree)
+    public void Build(List<ISerializationCommand> commands)
     {
-        Func<object> action;
-        Type propertyType = Property.PropertyType;
-
-
         if (Property.GetCustomAttribute<AlignAttribute>() is AlignAttribute a)
         {
-            a.AlignStream(tree, reader);
+            commands.Add(new AlignCommand(a));
         }
 
         var getAttr = Property.GetCustomAttribute<GetAttribute>();
 
-        if (getAttr is not null)
-        {
-            var resultValue = tree.GetValue(getAttr);
-            Property.SetValue(tree.CurrentObject, resultValue);
-            return;
-        }
+        //if (getAttr is not null)
+        //{
+        //    var resultValue = tree.GetValue(getAttr);
+        //    Property.SetValue(tree.CurrentObject, resultValue);
+        //    return;
+        //}
 
-        if (propertyType.IsArray)
+
+        var command = Build(Property.PropertyType, new PropertyAttributeProvider(Property));
+
+        if (Property.SetMethod != null)
         {
-            propertyType = propertyType.GetElementType()!;
+            commands.Add(new PropertyCommand(Property, command));
         }
-        else if (propertyType.IsEnum)
+        else
         {
-            propertyType = propertyType.GetEnumUnderlyingType()!;
+            commands.Add(new VerifyPropertyCommand(Property, (ISerializationReadCommand)command));
         }
-        if (propertyType == typeof(string))
+    }
+    public ISerializationCommand Build(Type type, IAttributeProvider attributeProvider)
+    {
+        if (type.IsArray)
         {
-            action = () =>
+            var length = attributeProvider.GetAttribute<LengthAttribute>();
+            Type elementType = type.GetElementType()!;
+            var readItemCommand = Build(elementType, attributeProvider);
+
+            ISerializationValueCommand<int> lengthCommand;
+            if (length is not null)
             {
-                var encoding = EncodingAttribute.GetEncoding(Property, tree);
-                var cstring = Property.GetCustomAttribute<CStringAttribute>();
-
-                var length = Property.PropertyType.IsArray ? null : LengthAttribute.GetLength(Property, tree);
-
-                if (length is int l)
+                if (length.Path is null)
                 {
-                    if (l == 0)
+                    lengthCommand = new ConstantValueCommand<int>(length.Length);
+                }
+                else
+                {
+                    lengthCommand = new DataPathCommand<int>(length.Path);
+                }
+            }
+            else
+            {
+                lengthCommand = new Int32Command();
+            }
+            return new ArrayCommand(elementType, lengthCommand, (ISerializationValueCommand)readItemCommand);
+        }
+        else if (type.IsEnum)
+        {
+            return Build(type.GetEnumUnderlyingType()!, attributeProvider);
+        }
+        if (type == typeof(string))
+        {
+            var encoding = attributeProvider.GetAttribute<EncodingAttribute>();
+            var cstring = attributeProvider.GetAttribute<CStringAttribute>();
+            var length = attributeProvider.GetAttribute<LengthAttribute>();
+
+            ISerializationValueCommand<Encoding> encodingCommand = encoding is null ? new ConstantValueCommand<Encoding>(Encoding.ASCII) : new DataPathCommand<Encoding>(encoding.Path);
+
+            if (cstring is null)
+            {
+                ISerializationValueCommand<int> lengthCommand;
+                if (length is not null)
+                {
+                    if (length.Path is null)
                     {
-                        return "";
+                        lengthCommand = new ConstantValueCommand<int>(length.Length);
                     }
                     else
                     {
-
-                        if (cstring is null)
-                        {
-                            var bytes = reader.ReadBytes(l);
-                            return encoding.GetString(bytes.ToArray());
-                        }
-                        else
-                        {
-                            var bytes = reader.ReadBytes(l);
-                            int byteCount = bytes.TakeWhile(b => b != 0).Count();
-                            return encoding.GetString(bytes.ToArray(), 0, byteCount);
-                        }
+                        lengthCommand = new DataPathCommand<int>(length.Path);
                     }
                 }
                 else
                 {
-                    if (cstring is null)
+                    lengthCommand = new Int32Command();
+                }
+                return new StringCommand(encodingCommand, lengthCommand);
+            }
+            else
+            {
+                if (length is not null)
+                {
+                    ISerializationValueCommand<int> lengthCommand;
+                    if (length.Path is null)
                     {
-                        l = reader.ReadInt32();
-                        return encoding.GetString(reader.ReadBytes(l));
+                        lengthCommand = new ConstantValueCommand<int>(length.Length);
                     }
                     else
                     {
-                        List<byte> bytes = new List<byte>(10);
-                        byte b = reader.ReadByte();
-                        while (b != 0)
-                        {
-                            bytes.Add(b);
-                            b = reader.ReadByte();
-                        }
-                        return encoding.GetString(bytes.ToArray());
+                        lengthCommand = new DataPathCommand<int>(length.Path);
+                    }
+                    return new CStringLengthCommmand(encodingCommand, lengthCommand);
+                }
+                else
+                {
+                    return new CStringCommmand(encodingCommand);
+                }
+            }
+        }
+        else if (type == typeof(bool))
+        {
+            var length = attributeProvider.GetAttribute<LengthAttribute>();
+            if (length is not null)
+            {
+
+                ISerializationValueCommand<int> lengthCommand;
+                if (length is not null)
+                {
+                    if (length.Path is null)
+                    {
+                        lengthCommand = new ConstantValueCommand<int>(length.Length);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException();
+                        //lengthCommand = new DataPathCommand<int>(length.Path);
                     }
                 }
-            };
-        }
-        else if (propertyType == typeof(bool))
-        {
-            var length = Property.PropertyType.IsArray ? null : LengthAttribute.GetLength(Property, tree);
-            if (length is int l)
-            {
-                action = () =>
+                else
                 {
-                    bool isTrue = false;
-                    for (int i = 0; i < l; i++)
-                    {
-                        if (reader.ReadByte() > 0)
-                        {
-                            isTrue = true;
-                        }
-                    }
-                    return isTrue;
-                };
+                    throw new NotSupportedException();
+                    //lengthCommand = new Int32Command();
+                }
+                return new LargeBoolCommand(lengthCommand);
             }
             else
             {
-                action = () => reader.ReadByte() > 0;
+                return new BoolCommand();
             }
         }
-        else if (propertyType == typeof(byte))
+        else if (type == typeof(byte))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadByte();
-            }
-            else
-            {
-                action = () => (byte)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new UInt8Command() : new UInt8PositionCommand();
         }
-        else if (propertyType == typeof(int))
+        else if (type == typeof(int))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadInt32();
-            }
-            else
-            {
-                action = () => (int)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new Int32Command() : new Int32PositionCommand();
         }
-        else if (propertyType == typeof(short))
+        else if (type == typeof(short))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadInt16();
-            }
-            else
-            {
-                action = () => (short)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new Int16Command() : new Int16PositionCommand();
         }
-        else if (propertyType == typeof(long))
+        else if (type == typeof(long))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadInt64();
-            }
-            else
-            {
-                action = () => reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new Int64Command() : new Int64PositionCommand();
         }
-        else if (propertyType == typeof(sbyte))
+        else if (type == typeof(sbyte))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadSByte();
-            }
-            else
-            {
-                action = () => (sbyte)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new Int8Command() : new Int8PositionCommand();
         }
-        else if (propertyType == typeof(uint))
+        else if (type == typeof(uint))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadUInt32();
-            }
-            else
-            {
-                action = () => (uint)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new UInt32Command() : new UInt32PositionCommand();
         }
-        else if (propertyType == typeof(ushort))
+        else if (type == typeof(ushort))
         {
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadUInt16();
-            }
-            else
-            {
-                action = () => (ushort)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new UInt16Command() : new UInt16PositionCommand();
         }
-        else if (propertyType == typeof(ulong))
+        else if (type == typeof(ulong))
         {
-            action = () => reader.ReadUInt64();
-            var position = Property.GetCustomAttribute<PositionAttribute>();
-            if (position == null)
-            {
-                action = () => reader.ReadUInt64();
-            }
-            else
-            {
-                action = () => (ulong)reader.BaseStream.Position;
-            }
+            var position = attributeProvider.GetAttribute<PositionAttribute>();
+            return position == null ? new UInt64Command() : new UInt64PositionCommand();
         }
-        else if (propertyType == typeof(float))
+        else if (type == typeof(float))
         {
-            action = () => reader.ReadSingle();
+            return new Float32Command();
         }
-        else if (propertyType == typeof(double))
+        else if (type == typeof(double))
         {
-            action = () => reader.ReadDouble();
+            return new Float64Command();
         }
         else
         {
-            var switchType = Property.GetCustomAttribute<SwitchAttribute>();
+            var switchAttr = Property.GetCustomAttribute<SwitchAttribute>();
 
-            var objType = propertyType;
-            if (switchType is not null)
+            if(switchAttr is null)
             {
-                var target = tree.GetValue(switchType.Path);
-
-                objType =
-                    propertyType.Assembly.GetTypes()
-                    .Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract)
-                    .Select(t => new { Type = t, Attr = t.GetCustomAttribute<TargetAttribute>() })
-                    .Where(t => t.Attr is not null)
-                    .FirstOrDefault(t => t.Attr!.Target.Equals(target))?.Type;
-                if (objType is null)
-                {
-                    objType = propertyType.Assembly.GetTypes().Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract).FirstOrDefault(t => t.GetCustomAttribute<DefaultAttribute>() != null);
-                    if (objType is null)
-                    {
-                        throw new Exception($"No Matching type with target '{target}'");
-                    }
-                }
-            }
-
-            action = () => DataSerializer.Deserialize(objType, reader, o =>
-            {
-                if (!Property.PropertyType.IsArray)
-                {
-                    Property.SetValue(tree.CurrentObject, o);
-                }
-            }, tree);
-        }
-
-        if (Property.PropertyType.IsArray)
-        {
-            int length = LengthAttribute.GetLength(Property, tree) ?? reader.ReadInt32();
-            var arr = Array.CreateInstance(propertyType, length);
-            Property.SetValue(tree.CurrentObject, arr);
-            for (int i = 0; i < length; i++)
-            {
-                arr.SetValue(action(), i);
-            }
-        }
-        else
-        {
-            var actionResult = action();
-            if (Property.SetMethod != null)
-            {
-                Property.SetValue(tree.CurrentObject, actionResult);
+                return DataSerializer.BuildCommand(type);
             }
             else
             {
-                var test = Property.GetValue(tree.CurrentObject);
-                if (test?.Equals(actionResult) != true)
-                {
-                    throw new Exception($"Expected to read '{test}' but instead read '{actionResult}'");
-                }
+                throw new NotImplementedException();
+                //var target = tree.GetValue(switchAttr.Path);
+                //
+                //var objType =
+                //    propertyType.Assembly.GetTypes()
+                //    .Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract)
+                //    .Select(t => new { Type = t, Attr = t.GetCustomAttribute<TargetAttribute>() })
+                //    .Where(t => t.Attr is not null)
+                //    .FirstOrDefault(t => t.Attr!.Target.Equals(target))?.Type;
+                //if (objType is null)
+                //{
+                //    objType = propertyType.Assembly.GetTypes().Where(t => t.IsAssignableTo(propertyType) && !t.IsInterface && !t.IsAbstract).FirstOrDefault(t => t.GetCustomAttribute<DefaultAttribute>() != null);
+                //    if (objType is null)
+                //    {
+                //        throw new Exception($"No Matching type with target '{target}'");
+                //    }
+                //}
             }
+        }
+    }
+    public interface IAttributeProvider
+    {
+        T? GetAttribute<T>() where T : Attribute;
+    }
+    public class PropertyAttributeProvider : IAttributeProvider
+    {
+        public PropertyInfo PropertyInfo { get; }
+        public HashSet<Type> UsedTypes { get; } = [];
+        public PropertyAttributeProvider(PropertyInfo propertyInfo)
+        {
+            PropertyInfo = propertyInfo;
+        }
+        public T? GetAttribute<T>() where T : Attribute
+        {
+            if (!UsedTypes.Add(typeof(T))) return null;
+            return PropertyInfo.GetCustomAttribute<T>();
         }
     }
 }

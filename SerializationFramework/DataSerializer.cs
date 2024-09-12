@@ -1,75 +1,75 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
-using System;
+using BlurFileFormats.SerializationFramework.Command;
+using BlurFileFormats.SerializationFramework.Commands.Structures;
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework;
-public class DataSerializaer<T>
+public class DataSerializer<T> : DataSerializer where T : notnull
 {
-    public T Deserialize(Stream stream)
-    {
+    public DataSerializer(ISerializationValueCommand serializationCommand) : base(serializationCommand) { }
 
+    new public T Deserialize(Stream stream)
+    {
+        return (T)base.Deserialize(stream);
     }
     public void Serialize(T value, Stream stream)
     {
-
+        base.Serialize(value, stream);
     }
 }
-public static partial class DataSerializer
+public class DataSerializer
 {
-    public static DataSerializaer<T> Create<T>()
-    {
+    ISerializationValueCommand SerializationCommand { get; }
 
+    public DataSerializer(ISerializationValueCommand serializationCommand)
+    {
+        SerializationCommand = serializationCommand;
     }
 
-    public static T Deserialize<T>(Stream stream) where T : new()
+    public object Deserialize(Stream stream)
     {
-        using var reader = new BinaryReader(stream, Encoding.ASCII, true);
-        return (T)Deserialize(typeof(T), reader);
+        using var reader = new BinaryReader(stream);
+        var readValue = SerializationCommand.Read(reader, []);
+        return readValue;
     }
-    public static object Deserialize(Type t, Stream stream)
+    public void Serialize(object value, Stream stream)
     {
-        using var reader = new BinaryReader(stream, Encoding.ASCII, true);
-        return Deserialize(t, reader);
+        using var writer = new BinaryWriter(stream);
+        SerializationCommand.Write(writer, [], value);
     }
-    public static object Deserialize(Type t, BinaryReader reader, Action<object>? setValue = null, ReadTree? tree = null)
+    public static DataSerializer<T> Build<T>() where T : notnull
     {
-        tree ??= [];
+        return new DataSerializer<T>(BuildCommand(typeof(T)));
+    }
+    public static DataSerializer Build(Type type)
+    {
+        return new DataSerializer(BuildCommand(type));
+    }
 
-        var reads = ReadAttribute.GetReads(t);
+    internal static ISerializationValueCommand BuildCommand(Type type)
+    {
+        var reads = ReadAttribute.GetReads(type);
 
-        object value = Activator.CreateInstance(t)!;
-        setValue?.Invoke(value);
-        tree.Push(value);
-
+        List<ISerializationCommand> subCommands = [];
         foreach (var read in reads)
         {
-            read.Read(reader, tree);
+            read.Build(subCommands);
         }
-        tree.Pop();
-        return value;
+        return new StructureCommand(type, subCommands);
     }
-
-    public static string CreateReaderProgram<T>(string language) where T : new() => CreateReader(typeof(T), language);
-    static string CreateReader(Type t, string language)
-    {
-        return "";
-    }
-    
-
+}
+public static class Foo
+{
     public static void PrintEntity(this object? value, bool offset = false)
     {
-        if(value is null)
+        if (value is null)
         {
             Debug.WriteLine("null");
             offset = false;
         }
-        else if(value is Enum)
+        else if (value is Enum)
         {
             Debug.WriteLine(value.ToString());
             offset = false;
@@ -80,26 +80,30 @@ public static partial class DataSerializer
             Debug.Write(value);
             Debug.WriteLine("\"");
             offset = false;
-        } else if(value is int ni)
+        }
+        else if (value is int ni)
         {
             Debug.WriteLine($"{ni:X8} : {ni}");
             offset = false;
-        } else if(value is long nl)
+        }
+        else if (value is long nl)
         {
             Debug.WriteLine($"{nl:X16} : {nl}");
             offset = false;
-        } else if(value is short ns)
+        }
+        else if (value is short ns)
         {
             Debug.WriteLine($"{ns:X4} : {ns}");
             offset = false;
-        } else if(value is byte nb)
+        }
+        else if (value is byte nb)
         {
             Debug.WriteLine($"{nb:X2} : {nb}");
             offset = false;
         }
         else if (value is Array a)
         {
-            if(a is byte[] b)
+            if (a is byte[] b)
             {
                 Debug.WriteLine("");
                 Debug.IndentLevel++;
@@ -127,7 +131,8 @@ public static partial class DataSerializer
                     Debug.IndentLevel--;
                 }
             }
-        } else if(value is IEnumerable e)
+        }
+        else if (value is IEnumerable e)
         {
             if (e is IEnumerable<byte> b)
             {
@@ -163,10 +168,10 @@ public static partial class DataSerializer
         {
             Debug.WriteLine(value);
             offset = false;
-        } 
+        }
         else
         {
-            if(offset)
+            if (offset)
             {
                 offset = false;
                 Debug.WriteLine("");

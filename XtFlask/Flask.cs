@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 namespace BlurFileFormats.XtFlask;
 public static class Flask
 {
+    static DataSerializer<FlaskEntity> FlaskSerializer { get; } = DataSerializer.Build<FlaskEntity>();
     public static XtDb Import(string file)
     {
         using var fileStream = File.OpenRead(file);
@@ -22,7 +23,7 @@ public static class Flask
     }
     public static XtDb Import(Stream source)
     {
-        var flaskEntity = DataSerializer.Deserialize<FlaskEntity>(source);
+        var flaskEntity = FlaskSerializer.Deserialize(source);
 
         var db = new XtDb();
         

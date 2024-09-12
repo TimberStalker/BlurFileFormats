@@ -6,7 +6,8 @@ namespace BlurFileFormats.SerializationFramework;
 public class ReadTree : IEnumerable<object>
 {
     List<object> tree = [];
-    public object CurrentObject => tree.Last();
+    public object CurrentObject => tree[^1];
+    public object CurrentParent => tree[^2];
     public void Push(object value)
     {
         tree.Add(value);

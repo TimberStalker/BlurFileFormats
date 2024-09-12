@@ -1,4 +1,5 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFramework.Command;
 using System.Reflection;
 
 namespace BlurFileFormats.SerializationFramework;
@@ -33,5 +34,10 @@ public class ReadMethod : IRead
             }
         }
         Method.Invoke(tree.CurrentObject, arguments);
+    }
+
+    public void Build(List<ISerializationCommand> commands)
+    {
+        throw new NotImplementedException();
     }
 }
