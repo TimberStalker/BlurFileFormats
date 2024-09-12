@@ -1,4 +1,6 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 
 namespace BlurFileFormats.SerializationFramework.Attributes;
 
@@ -6,7 +8,7 @@ namespace BlurFileFormats.SerializationFramework.Attributes;
 public class LengthAttribute : Attribute
 {
     public int Length { get; }
-    public string? Path { get; }
+    public DataPath? Path { get; }
     public LengthAttribute(int length)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(length, 0);
@@ -17,19 +19,21 @@ public class LengthAttribute : Attribute
         expression = expression.Trim();
         if (expression.StartsWith("nameof("))
         {
-            Path = expression[7..^1].Replace(" ", "");
+            Path = new DataPath(expression[7..^1].Replace(" ", ""));
         } else
         {
-            Path = path;
+            Path = new DataPath(path);
         }
     }
-    public int GetLength(object value, List<object> tree)
+    public static int? GetLength(PropertyInfo property, ReadTree tree)
     {
-        if (Path is null)
+        var attribute = property.GetCustomAttribute<LengthAttribute>();
+        if (attribute is null) return null;
+        if (attribute.Path is null)
         {
-            return Length;
+            return attribute.Length;
         }
 
-        return Convert.ToInt32(DataPath.GetValue(Path, value, tree));
+        return Convert.ToInt32(tree.GetValue(attribute.Path));
     }
 }

@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="SerializationFramework\Languages\" />
+    <Folder Include="SerializationFramework\Write\" />
     <Folder Include="XtFlask\Types\Atoms\" />
   </ItemGroup>
 

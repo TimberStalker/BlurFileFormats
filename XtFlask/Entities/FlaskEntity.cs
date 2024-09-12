@@ -62,15 +62,7 @@ public class FlaskEntity
     [AllowNull]
     [Read] public FlaskComponentEntity[] Components { get; set; }
 
-    [Read]
-    public void Skip(BinaryReader reader)
-    {
-        if (reader.BaseStream.Position % 4 != 0)
-        {
-            reader.BaseStream.Seek(4 - reader.BaseStream.Position % 4, SeekOrigin.Current);
-        }
-    }
-
+    [Align(4)]
     [Length(nameof(DataBlob.Count))]
     [AllowNull]
     [Read] public byte[] Data { get; set; }

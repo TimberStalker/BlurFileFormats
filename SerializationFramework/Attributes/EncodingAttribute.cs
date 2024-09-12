@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace BlurFileFormats.SerializationFramework.Attributes;
@@ -6,21 +7,21 @@ namespace BlurFileFormats.SerializationFramework.Attributes;
 [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
 public class EncodingAttribute : Attribute
 {
-    public string Path { get; }
+    public DataPath Path { get; }
     public EncodingAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "")
     {
         expression = expression.Trim();
         if (expression.StartsWith("nameof("))
         {
-            Path = expression[7..^1].Replace(" ", "");
+            Path = new DataPath(expression[7..^1].Replace(" ", ""));
         }
         else
         {
-            Path = path;
+            Path = new DataPath(path);
         }
     }
-    public Encoding GetEncoding(object value, List<object> tree)
-    {
-        return (Encoding)DataPath.GetValue(Path, value, tree)!;
-    }
+    public static Encoding GetEncoding(PropertyInfo property, ReadTree tree)
+        => property.GetCustomAttribute<EncodingAttribute>() is EncodingAttribute e ? 
+            tree.GetValue<Encoding>(e.Path) : 
+            Encoding.ASCII;
 }
