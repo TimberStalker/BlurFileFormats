@@ -16,6 +16,10 @@ public class PointerComponent : IRecordComponent
 
     public IXtValue GetValue(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
     {
+        if(Component == ushort.MaxValue || Offset == ushort.MaxValue)
+        {
+            return XtNullValue.Instance;
+        }
         return refRecords[Component][Offset].GetValue(references, refRecords);
     }
 }

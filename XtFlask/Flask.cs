@@ -7,8 +7,10 @@ using BlurFileFormats.XtFlask.Types.Fields;
 using BlurFileFormats.XtFlask.Values;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -58,6 +60,7 @@ public static class Flask
             List<List<IRecordComponent>> refRecords = [];
 
             var bytes = dataReader.ReadBytes((int)record.DataBytes);
+
             string strings = encoding.GetString(dataReader.ReadBytes((int)record.StringBytes));
 
             using var recordBytesStream = new MemoryStream(bytes);

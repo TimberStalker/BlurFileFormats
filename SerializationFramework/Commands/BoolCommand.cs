@@ -22,9 +22,9 @@ public class BoolCommand : ISerializationValueCommand<bool>
 }
 public class LargeBoolCommand : ISerializationValueCommand<bool>
 {
-    ISerializationValueCommand<int> LengthCommand { get; }
+    ISerializationReadCommand<int> LengthCommand { get; }
 
-    public LargeBoolCommand(ISerializationValueCommand<int> lengthCommand)
+    public LargeBoolCommand(ISerializationReadCommand<int> lengthCommand)
     {
         LengthCommand = lengthCommand;
     }
