@@ -2,11 +2,11 @@
 
 namespace BlurFileFormats.SerializationFramework.Command.Numeric;
 
-public class Int8Command : ISerializationValueCommand<sbyte>
+public class Int8Command : ISerializeCommand<sbyte>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public sbyte Read(BinaryReader reader, ReadTree tree) => reader.ReadSByte();
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public sbyte Read(BinaryReader reader, ReadTree tree, object parent) => reader.ReadSByte();
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (sbyte)value);
-    public void Write(BinaryWriter writer, ReadTree tree, sbyte value) => writer.Write(value);
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (sbyte)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, sbyte value) => writer.Write(value);
 }

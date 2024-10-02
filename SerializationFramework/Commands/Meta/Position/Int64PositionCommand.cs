@@ -2,12 +2,17 @@
 
 namespace BlurFileFormats.SerializationFramework.Command.Meta.Position;
 
-public class Int64PositionCommand : ISerializationReadCommand<long>
+public class Int64PositionCommand : IGetCommand<long>
 {
-    public Int64PositionCommand()
+    public long Get(BinaryReader reader, ReadTree tree, object parent)
     {
+        return reader.BaseStream.Position;
+    }
+    public long Get(BinaryWriter writer, WriteTree tree, object parent)
+    {
+        return writer.BaseStream.Position;
     }
 
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public long Read(BinaryReader reader, ReadTree tree) => reader.BaseStream.Position;
+    object IGetCommand.Get(BinaryReader reader, ReadTree tree, object parent) => Get(reader, tree, parent);
+    object IGetCommand.Get(BinaryWriter writer, WriteTree tree, object parent) => Get(writer, tree, parent);
 }

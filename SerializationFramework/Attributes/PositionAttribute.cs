@@ -1,6 +1,5 @@
 ﻿namespace BlurFileFormats.SerializationFramework.Attributes;
 
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class PositionAttribute : Attribute
+public class PositionAttribute : IntegerMetaAttribute
 {
 }

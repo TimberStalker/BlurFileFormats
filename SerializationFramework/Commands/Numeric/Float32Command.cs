@@ -2,11 +2,11 @@
 
 namespace BlurFileFormats.SerializationFramework.Command.Numeric;
 
-public class Float32Command : ISerializationValueCommand<float>
+public class Float32Command : ISerializeCommand<float>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public float Read(BinaryReader reader, ReadTree tree) => reader.ReadSingle();
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public float Read(BinaryReader reader, ReadTree tree, object parent) => reader.ReadSingle();
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (float)value);
-    public void Write(BinaryWriter writer, ReadTree tree, float value) => writer.Write(value);
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (float)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, float value) => writer.Write(value);
 }

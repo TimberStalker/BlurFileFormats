@@ -2,11 +2,11 @@
 
 namespace BlurFileFormats.SerializationFramework.Command.Numeric;
 
-public class UInt64Command : ISerializationValueCommand<ulong>
+public class UInt64Command : ISerializeCommand<ulong>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public ulong Read(BinaryReader reader, ReadTree tree) => reader.ReadUInt64();
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public ulong Read(BinaryReader reader, ReadTree tree, object parent) => reader.ReadUInt64();
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (ulong)value);
-    public void Write(BinaryWriter writer, ReadTree tree, ulong value) => writer.Write(value);
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (ulong)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, ulong value) => writer.Write(value);
 }

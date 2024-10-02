@@ -2,11 +2,11 @@
 
 namespace BlurFileFormats.SerializationFramework.Command.Numeric;
 
-public class Int64Command : ISerializationValueCommand<long>
+public class Int64Command : ISerializeCommand<long>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public long Read(BinaryReader reader, ReadTree tree) => reader.ReadInt64();
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public long Read(BinaryReader reader, ReadTree tree, object parent) => reader.ReadInt64();
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (long)value);
-    public void Write(BinaryWriter writer, ReadTree tree, long value) => writer.Write(value);
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (long)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, long value) => writer.Write(value);
 }

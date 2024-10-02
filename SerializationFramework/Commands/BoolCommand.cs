@@ -6,33 +6,33 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework.Commands;
-public class BoolCommand : ISerializationValueCommand<bool>
+public class BoolCommand : ISerializeCommand<bool>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public bool Read(BinaryReader reader, ReadTree tree)
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public bool Read(BinaryReader reader, ReadTree tree, object parent)
     {
         return reader.ReadByte() > 0;
     }
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (bool)value);
-    public void Write(BinaryWriter writer, ReadTree tree, bool value)
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (bool)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, bool value)
     {
         writer.Write((byte)(value ? 1 : 0));
     }
 }
-public class LargeBoolCommand : ISerializationValueCommand<bool>
+public class LargeBoolCommand : ISerializeCommand<bool>
 {
-    ISerializationReadCommand<int> LengthCommand { get; }
+    SerializerCommandReference<int> LengthCommand { get; }
 
-    public LargeBoolCommand(ISerializationReadCommand<int> lengthCommand)
+    public LargeBoolCommand(SerializerCommandReference<int> lengthCommand)
     {
         LengthCommand = lengthCommand;
     }
 
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public bool Read(BinaryReader reader, ReadTree tree)
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public bool Read(BinaryReader reader, ReadTree tree, object parent)
     {
-        int length = LengthCommand.Read(reader, tree);
+        int length = LengthCommand.GetOrRead(reader, tree, parent);
         bool isTrue = false;
         for (int i = 0; i < length; i++)
         {
@@ -44,8 +44,8 @@ public class LargeBoolCommand : ISerializationValueCommand<bool>
         return isTrue;
     }
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (bool)value);
-    public void Write(BinaryWriter writer, ReadTree tree, bool value)
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (bool)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, bool value)
     {
         writer.Write((byte)(value ? 1 : 0));
     }

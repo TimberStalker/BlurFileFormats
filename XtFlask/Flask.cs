@@ -288,7 +288,7 @@ public class XtRef : IXtRef
 {
     public uint Id { get; set; }
     public IXtValue Value { get; set; }
-    IXtType IXtValue.Type => Value.Type;
+    public IXtType Type => Value.Type;
     object IXtValue.Value => Value;
 
     public XtRef(uint id, IXtValue value)

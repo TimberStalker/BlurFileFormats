@@ -25,15 +25,4 @@ public class LengthAttribute : Attribute
             Path = new DataPath(path);
         }
     }
-    public static int? GetLength(PropertyInfo property, ReadTree tree)
-    {
-        var attribute = property.GetCustomAttribute<LengthAttribute>();
-        if (attribute is null) return null;
-        if (attribute.Path is null)
-        {
-            return attribute.Length;
-        }
-
-        return Convert.ToInt32(tree.GetValue(attribute.Path));
-    }
 }

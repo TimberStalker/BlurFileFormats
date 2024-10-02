@@ -1,34 +1,49 @@
 ﻿using System.Reflection.PortableExecutable;
 using System.Text;
 using BlurFileFormats.SerializationFramework.Command.Numeric;
+using BlurFileFormats.SerializationFramework.Commands;
 using BlurFileFormats.SerializationFramework.Read;
 
 namespace BlurFileFormats.SerializationFramework.Command.Sequence.Strings;
-public class StringCommand : ISerializationValueCommand<string>
+public class StringCommand : ISerializeCommand<string>
 {
-    public ISerializationReadCommand<Encoding> Encoding { get; }
-    public ISerializationValueCommand<int> Length { get; }
+    public SerializerCommandReference<Encoding> EncodingCommand { get; }
+    public SerializerCommandReference<int> LengthCommand { get; }
 
-    public StringCommand(ISerializationReadCommand<Encoding> encoding, ISerializationValueCommand<int> length)
+    public StringCommand(SerializerCommandReference<Encoding> encoding, SerializerCommandReference<int> length)
     {
-        Encoding = encoding;
-        Length = length;
+        EncodingCommand = encoding;
+        LengthCommand = length;
     }
 
-    public string Read(BinaryReader reader, ReadTree tree)
+    public string Read(BinaryReader reader, ReadTree tree, object parent)
     {
-        int length = Length.Read(reader, tree);
-        return Encoding.Read(reader, tree).GetString(reader.ReadBytes(length));
+        int length = LengthCommand.GetOrRead(reader, tree, parent);
+        return EncodingCommand.GetOrRead(reader, tree, parent).GetString(reader.ReadBytes(length));
     }
 
-    public void Write(BinaryWriter writer, ReadTree tree, string value)
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, string value)
     {
-        var bytes = Encoding.Read(null, tree).GetBytes((string)value);
-        Length.Write(writer, tree, bytes.Length);
-        writer.Write(bytes);
+        EncodingCommand.GetOrWrite(writer, tree, parent, Encoding.ASCII, out var encoding);
+        var bytes = encoding.GetBytes(value);
+
+        LengthCommand.GetOrWrite(writer, tree, parent, bytes.Length, out var length);
+
+        if(length >= bytes.Length)
+        {
+            writer.Write(bytes);
+            for(int i = length; i < bytes.Length; i++)
+            {
+                writer.Write(0);
+            }
+        }
+        else
+        {
+            throw new Exception("Length is not valid.");
+        }
     }
 
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (string)value);
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (string)value);
 }

@@ -1,8 +1,10 @@
 ﻿using BlurFileFormats.SerializationFramework.Command;
+using BlurFileFormats.SerializationFramework.Commands.Structures;
 
 namespace BlurFileFormats.SerializationFramework;
 
 public interface IRead
 {
-    void Build(List<ISerializationCommand> commands);
+    int Order { get; }
+    void Build(List<ISerializerPropertyCommand> commands, TypeTree tree);
 }

@@ -3,8 +3,17 @@ using BlurFileFormats.SerializationFramework.Read;
 
 namespace BlurFileFormats.SerializationFramework.Commands.Meta.Position;
 
-public class UInt8PositionCommand : ISerializationReadCommand<byte>
+public class UInt8PositionCommand : IGetCommand<byte>
 {
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public byte Read(BinaryReader reader, ReadTree tree) => (byte)reader.BaseStream.Position;
+    public byte Get(BinaryReader reader, ReadTree tree, object parent)
+    {
+        return (byte)reader.BaseStream.Position;
+    }
+    public byte Get(BinaryWriter writer, WriteTree tree, object parent)
+    {
+        return (byte)writer.BaseStream.Position;
+    }
+
+    object IGetCommand.Get(BinaryReader reader, ReadTree tree, object parent) => Get(reader, tree, parent);
+    object IGetCommand.Get(BinaryWriter writer, WriteTree tree, object parent) => Get(writer, tree, parent);
 }

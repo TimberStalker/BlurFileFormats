@@ -1,20 +1,21 @@
 ﻿using System.Text;
+using BlurFileFormats.SerializationFramework.Commands;
 using BlurFileFormats.SerializationFramework.Read;
 
 namespace BlurFileFormats.SerializationFramework.Command.Sequence.Strings;
 
-public class CStringCommmand : ISerializationValueCommand<string>
+public class CStringCommmand : ISerializeCommand<string>
 {
-    public ISerializationValueCommand<Encoding> EncodingCommand { get; }
+    public SerializerCommandReference<Encoding> EncodingCommand { get; }
 
-    public CStringCommmand(ISerializationValueCommand<Encoding> encoding)
+    public CStringCommmand(SerializerCommandReference<Encoding> encoding)
     {
         EncodingCommand = encoding;
     }
 
 
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public string Read(BinaryReader reader, ReadTree tree)
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+    public string Read(BinaryReader reader, ReadTree tree, object parent)
     {
         List<byte> bytes = new List<byte>(10);
         byte b = reader.ReadByte();
@@ -23,14 +24,16 @@ public class CStringCommmand : ISerializationValueCommand<string>
             bytes.Add(b);
             b = reader.ReadByte();
         }
-        var encoding = EncodingCommand.Read(reader, tree);
+        var encoding = EncodingCommand.GetOrRead(reader, tree, parent);
         return encoding.GetString(bytes.ToArray());
     }
 
-    void ISerializationWriteCommand.Write(BinaryWriter writer, ReadTree tree, object value) => Write(writer, tree, (string)value);
-    public void Write(BinaryWriter writer, ReadTree tree, string value)
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (string)value);
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, string value)
     {
-        var encoding = EncodingCommand.Read(null, tree);
+        EncodingCommand.GetOrWrite(writer, tree, parent, Encoding.ASCII, out var encoding);
+        var bytes = encoding.GetBytes(value);
+
         writer.Write(encoding.GetBytes(value));
         writer.Write((byte)0);
     }

@@ -1,24 +1,25 @@
 ﻿using System.Reflection.PortableExecutable;
 using System.Text;
+using BlurFileFormats.SerializationFramework.Commands;
 using BlurFileFormats.SerializationFramework.Read;
 
 namespace BlurFileFormats.SerializationFramework.Command.Sequence.Strings;
 
-public class CStringLengthCommmand : ISerializationValueCommand
+public class CStringLengthCommmand : ISerializeCommand<string>
 {
-    public ISerializationValueCommand<Encoding> EncodingCommand { get; }
-    public ISerializationValueCommand<int> LengthCommand { get; }
+    public SerializerCommandReference<Encoding> EncodingCommand { get; }
+    public SerializerCommandReference<int> LengthCommand { get; }
 
-    public CStringLengthCommmand(ISerializationValueCommand<Encoding> encodingCommand, ISerializationValueCommand<int> lengthCommand)
+    public CStringLengthCommmand(SerializerCommandReference<Encoding> encodingCommand, SerializerCommandReference<int> lengthCommand)
     {
         EncodingCommand = encodingCommand;
         LengthCommand = lengthCommand;
     }
 
-    public object Read(BinaryReader reader, ReadTree tree)
+    public string Read(BinaryReader reader, ReadTree tree, object parent)
     {
-        int length = LengthCommand.Read(reader, tree);
-        var encoding = EncodingCommand.Read(reader, tree);
+        int length = LengthCommand.GetOrRead(reader, tree, parent);
+        var encoding = EncodingCommand.GetOrRead(reader, tree, parent);
 
 
         var bytes = reader.ReadBytes(length);
@@ -26,17 +27,26 @@ public class CStringLengthCommmand : ISerializationValueCommand
         return encoding.GetString(bytes.ToArray(), 0, byteCount);
     }
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value)
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, string value)
     {
-        int maxLength = 0;//tree.GetValue<int>(Length);
-        var encoding = EncodingCommand.Read(null, tree);
+        EncodingCommand.GetOrWrite(writer, tree, parent, Encoding.ASCII, out var encoding);
+        var bytes = encoding.GetBytes(value);
 
-        var bytes = encoding.GetBytes((string)value);
-        int length = Math.Min(bytes.Length, maxLength);
-        writer.Write(bytes[0..length]);
-        for (int i = length; i < maxLength; i++)
+        LengthCommand.GetOrWrite(writer, tree, parent, bytes.Length, out var length);
+
+        if (bytes.Length > length)
+        {
+            throw new Exception("CString Length is too big");
+        }
+
+        writer.Write(bytes);
+        for (int i = bytes.Length; i < length; i++)
         {
             writer.Write((byte)0);
         }
     }
+
+    object ISerializeCommand.Read(BinaryReader reader, ReadTree tree, object parent) => Read(reader, tree, parent);
+
+    void ISerializeCommand.Write(BinaryWriter writer, WriteTree tree, object parent, object value) => Write(writer, tree, parent, (string)value);
 }

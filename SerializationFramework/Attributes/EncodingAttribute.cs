@@ -20,8 +20,4 @@ public class EncodingAttribute : Attribute
             Path = new DataPath(path);
         }
     }
-    public static Encoding GetEncoding(PropertyInfo property, ReadTree tree)
-        => property.GetCustomAttribute<EncodingAttribute>() is EncodingAttribute e ? 
-            tree.GetValue<Encoding>(e.Path) : 
-            Encoding.ASCII;
 }

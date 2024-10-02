@@ -2,48 +2,32 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework.Commands;
-public class DataPathCommand<T> : ISerializationValueCommand<T> where T : notnull
+public class DataPathCommand<T> : IGetCommand<T> where T : notnull
 {
-    public DataPath Path { get; }
+    public ISerializerCommand<T> Command { get; }
 
-    public DataPathCommand(DataPath path)
+    public DataPathCommand(ISerializerCommand<T> command)
     {
-        Path = path;
+        Command = command;
     }
 
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public T Read(BinaryReader reader, ReadTree tree) => tree.GetValue<T>(Path);
+    public T Get(BinaryReader reader, ReadTree tree, object parent) => tree.GetValue(Command);
 
+    public T Get(BinaryWriter writer, WriteTree tree, object parent) => tree.GetValue(Command);
 
-    public void Write(BinaryWriter writer, ReadTree tree, T value) { }
+    object IGetCommand.Get(BinaryReader reader, ReadTree tree, object parent) => Get(reader, tree, parent);
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value) { }
-}public class DataPathCommandOverwrite<T> : ISerializationValueCommand<T> where T : notnull
-{
-    public DataPath Path { get; }
-    public ISerializationWriteCommand<T> WriteCommand { get; }
+    object IGetCommand.Get(BinaryWriter writer, WriteTree tree, object parent) => Get(writer, tree, parent);
 
-    public DataPathCommandOverwrite(DataPath path, ISerializationWriteCommand<T> writeCommand)
+    public static ISerializerCommand<T> Create(DataPath path, TypeTree tree)
     {
-        Path = path;
-        WriteCommand = writeCommand;
-    }
-
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Read(reader, tree);
-    public T Read(BinaryReader reader, ReadTree tree) => tree.GetValue<T>(Path);
-
-
-    public void Write(BinaryWriter writer, ReadTree tree, T value)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Write(BinaryWriter writer, ReadTree tree, object value)
-    {
-        throw new NotImplementedException();
+        var command = tree.GetCommand<T>(path);
+        return new DataPathCommand<T>(command);
     }
 }

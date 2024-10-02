@@ -1,24 +1,25 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
 using BlurFileFormats.SerializationFramework.Read;
+using System.Reflection.PortableExecutable;
 
 namespace BlurFileFormats.SerializationFramework.Command.Meta;
 
-public class AlignCommand : ISerializationValueCommand
+public class AlignCommand : ISerializeCommand
 {
-    public AlignAttribute Align { get; }
-    public AlignCommand(AlignAttribute align)
+    public IGetCommand<int> AlignPositionCommand { get; }
+    public AlignCommand(IGetCommand<int> alignCommand)
     {
-        Align = align;
+        AlignPositionCommand = alignCommand;
     }
 
-    public object Read(BinaryReader reader, ReadTree tree)
+    public object Read(BinaryReader reader, ReadTree tree, object parent)
     {
-        Align.AlignStream(tree, reader);
+        AlignAttribute.AlignStream(AlignPositionCommand.Get(reader, tree, parent), reader);
         return 0;
     }
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value)
+    public void Write(BinaryWriter writer, WriteTree tree, object parent, object value)
     {
-        Align.AlignStream(tree, writer);
+        AlignAttribute.AlignStream(AlignPositionCommand.Get(writer, tree, parent), writer);
     }
 }

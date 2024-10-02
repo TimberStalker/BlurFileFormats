@@ -15,15 +15,9 @@ public class IndexBufferEntity
     [Read] public int Alignment { get; set; }
     [Read] public CompressionType CompressionType { get; set; }
     [Read] public bool EndianSwap { get; set; }
-    [Get(nameof(SceneEntity.SceneStart))]
-    [Read] public int SceneStart { get; set; }
-    [Position]
-    [Read] public int Position { get; set; }
-    public int SceneOffset => Position - SceneStart;
-    public int Skip => (SceneOffset + Alignment - 1 & -Alignment) - SceneOffset;
-    [Length(nameof(Skip))]
+    [Align(nameof(Alignment))]
     [AllowNull]
-    [Read] public byte[] SkipBytes { get; set; }
+    [Read] public byte AlignBytes { get; set; }
     [Length(nameof(Size))]
     [AllowNull]
     [Read] public byte[] VertexStream { get; set; }

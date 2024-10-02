@@ -11,3 +11,10 @@ public interface IXtMultiValue : IXtValue
 {
     IReadOnlyList<IXtValue> Values { get; }
 }
+public static class XtValue
+{
+    public static void Explore(this IXtValue xtValue, Action action)
+    {
+
+    }
+}

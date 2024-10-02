@@ -17,10 +17,8 @@ public sealed class ReadAttribute : Attribute
         Order = order;
     }
     public static IRead[] GetReads(Type t) => t.GetProperties()
-            .Select(p => new { Prop = (IRead)new ReadProperty(p), Attr = p.GetCustomAttribute<ReadAttribute>() })
-            .Concat(t.GetMethods()
-                .Select(p => new { Prop = (IRead)new ReadMethod(p), Attr = p.GetCustomAttribute<ReadAttribute>() }))
-            .Where(p => p.Attr is not null)
-            .OrderBy(p => p.Attr!.Order)
-            .Select(p => p.Prop).ToArray();
+            .Select(o => (IRead)new ReadProperty(o))
+            .Concat(t.GetMethods().Select(m => new ReadMethod(m)))
+            .OrderBy(p => p.Order)
+            .ToArray();
 }

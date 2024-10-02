@@ -8,7 +8,7 @@ using System.Reflection;
 namespace BlurFileFormats.SerializationFramework;
 public class DataSerializer<T> : DataSerializer where T : notnull
 {
-    public DataSerializer(ISerializationValueCommand serializationCommand) : base(serializationCommand) { }
+    public DataSerializer(ISerializeCommand serializationCommand) : base(serializationCommand) { }
 
     new public T Deserialize(Stream stream)
     {
@@ -21,9 +21,9 @@ public class DataSerializer<T> : DataSerializer where T : notnull
 }
 public class DataSerializer
 {
-    ISerializationValueCommand SerializationCommand { get; }
+    ISerializeCommand SerializationCommand { get; }
 
-    public DataSerializer(ISerializationValueCommand serializationCommand)
+    public DataSerializer(ISerializeCommand serializationCommand)
     {
         SerializationCommand = serializationCommand;
     }
@@ -31,13 +31,13 @@ public class DataSerializer
     public object Deserialize(Stream stream)
     {
         using var reader = new BinaryReader(stream);
-        var readValue = SerializationCommand.Read(reader, []);
+        var readValue = SerializationCommand.Read(reader, new(), null);
         return readValue;
     }
     public void Serialize(object value, Stream stream)
     {
         using var writer = new BinaryWriter(stream);
-        SerializationCommand.Write(writer, [], value);
+        SerializationCommand.Write(writer, new WriteTree(), writer, value);
     }
     public static DataSerializer<T> Build<T>() where T : notnull
     {
@@ -48,16 +48,18 @@ public class DataSerializer
         return new DataSerializer(BuildCommand(type));
     }
 
-    internal static ISerializationValueCommand BuildCommand(Type type)
+    internal static ISerializeCommand BuildCommand(Type type, TypeTree? tree = null)
     {
+        tree ??= new(type);
         var reads = ReadAttribute.GetReads(type);
 
-        List<ISerializationCommand> subCommands = [];
+        List<ISerializerPropertyCommand> subCommands = [];
         foreach (var read in reads)
         {
-            read.Build(subCommands);
+            read.Build(subCommands, tree);
         }
-        return new StructureCommand(type, subCommands);
+        StructureCommand command = new StructureCommand(type, subCommands);
+        return command;
     }
 }
 public static class Foo

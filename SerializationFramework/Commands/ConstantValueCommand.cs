@@ -6,7 +6,20 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework.Commands;
-public class ConstantValueCommand<T> : ISerializationValueCommand<T> where T : notnull
+public class ConstantExpressionCommand : IGetCommand
+{
+    public Func<object, object> Value { get; }
+
+    public ConstantExpressionCommand(Func<object, object> value)
+    {
+        Value = value;
+    }
+    public object Get(BinaryReader reader, ReadTree tree, object parent) => Value(parent);
+
+    public object Get(BinaryWriter writer, WriteTree tree, object parent) => Value(parent);
+
+}
+public class ConstantValueCommand<T> : IGetCommand<T> where T : notnull
 {
     public T Value { get; }
 
@@ -14,11 +27,11 @@ public class ConstantValueCommand<T> : ISerializationValueCommand<T> where T : n
     {
         Value = value;
     }
+    public T Get(BinaryReader reader, ReadTree tree, object parent) => Value;
 
-    public T Read(BinaryReader reader, ReadTree tree) => Value;
-    object ISerializationReadCommand.Read(BinaryReader reader, ReadTree tree) => Value;
+    public T Get(BinaryWriter writer, WriteTree tree, object parent) => Value;
 
-    public void Write(BinaryWriter writer, ReadTree tree, T value) { }
+    object IGetCommand.Get(BinaryReader reader, ReadTree tree, object parent) => Get(reader, tree, parent);
 
-    public void Write(BinaryWriter writer, ReadTree tree, object value) { }
+    object IGetCommand.Get(BinaryWriter writer, WriteTree tree, object parent) => Get(writer, tree, parent);
 }
