@@ -22,10 +22,9 @@ public class ArrayCommand : ISerializeCommand<Array>
     {
         int length = LengthCommand.GetOrRead(reader, tree, parent);
         var array = Array.CreateInstance(ElementType, length);
-        var childTree = new ChildTree(tree);
         for (int i = 0; i < length; i++)
         {
-            var value = ElementCommand.Read(reader, childTree, parent);
+            var value = ElementCommand.Read(reader, new ReadTree(tree), parent);
             array.SetValue(value, i);
         }
         return array;

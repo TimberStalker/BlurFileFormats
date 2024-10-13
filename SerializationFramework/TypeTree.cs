@@ -97,8 +97,11 @@ public class TypeTree : IEnumerable<object>
         }
         else
         {
-            builder.Append(desitnationProperty.Name);
-            builder.Append('.');
+            if(path.Length > 1)
+            {
+                builder.Append(desitnationProperty.Name);
+                builder.Append('.');
+            }
         }
         for (; pathIndex < path.Length; pathIndex++)
         {

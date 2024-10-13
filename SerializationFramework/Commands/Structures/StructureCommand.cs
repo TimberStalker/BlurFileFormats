@@ -23,10 +23,11 @@ public class StructureCommand : ISerializeCommand
     public object Read(BinaryReader reader, ReadTree tree, object parent)
     {
         var value = Activator.CreateInstance(Type)!;
+        var subTree = new ReadTree(tree);
+        tree.Add(this, subTree);
         foreach (var command in SubCommands)
         {
-            command.Read(reader, tree, value);
-
+            command.Read(reader, subTree, value);
         }
         return value;
     }
@@ -82,7 +83,7 @@ public class MetaPropertyCommand : ISerializerPropertyCommand
     {
         object readValue = Command.Get(reader, tree, value);
         tree.Add(Command, readValue);
-        Property.SetValue(value, readValue);
+        //Property.SetValue(value, readValue);
     }
 
     public void Write(BinaryWriter reader, WriteTree tree, object value) { }

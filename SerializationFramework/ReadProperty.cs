@@ -31,7 +31,11 @@ public class ReadProperty : IRead
     {
         if(Property.GetCustomAttribute<ReadAttribute>() is null)
         {
-            commands.Add(new MetaPropertyCommand(Property, new ConstantExpressionCommand(v => Property.GetValue(v)!)));
+            var constCommand = (IGetCommand)Activator.CreateInstance(typeof(ConstantExpressionCommand<>).MakeGenericType(Property.PropertyType), args: [(object)(Func<object, object>)(v => Property.GetValue(v)!)]);
+            
+            //ConstantExpressionCommand constCommand = new ConstantExpressionCommand(v => Property.GetValue(v)!);
+            commands.Add(new MetaPropertyCommand(Property, constCommand));
+            tree.Add(Property, constCommand);
             return;
         }
         var getAttr = Property.GetCustomAttribute<GetAttribute>();
@@ -61,7 +65,7 @@ public class ReadProperty : IRead
         {
             if (command is ISerializeCommand s)
             {
-                commands.Add(new PropertyCommand(Property, s));
+                commands.Add(new ValidatePropertyCommand(Property, s));
             }
             else if (command is IGetCommand g)
             {

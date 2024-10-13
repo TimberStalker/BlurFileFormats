@@ -40,6 +40,6 @@ public class ReadMethod : IRead
 
     public void Build(List<ISerializerPropertyCommand> commands, TypeTree tree)
     {
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
     }
 }

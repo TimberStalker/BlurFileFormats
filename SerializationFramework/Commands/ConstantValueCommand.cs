@@ -18,6 +18,20 @@ public class ConstantExpressionCommand : IGetCommand
 
     public object Get(BinaryWriter writer, WriteTree tree, object parent) => Value(parent);
 
+}public class ConstantExpressionCommand<T> : IGetCommand<T> where T : notnull
+{
+    public Func<object, object> Value { get; }
+
+    public ConstantExpressionCommand(Func<object, object> value)
+    {
+        Value = value;
+    }
+    object IGetCommand.Get(BinaryReader reader, ReadTree tree, object parent) => Value(parent);
+    object IGetCommand.Get(BinaryWriter writer, WriteTree tree, object parent) => Value(parent);
+    public T Get(BinaryReader reader, ReadTree tree, object parent) => (T)Value(parent);
+
+    public T Get(BinaryWriter writer, WriteTree tree, object parent) => (T)Value(parent);
+
 }
 public class ConstantValueCommand<T> : IGetCommand<T> where T : notnull
 {
