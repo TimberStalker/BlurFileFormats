@@ -1,6 +1,6 @@
 ﻿using BlurFileFormats.Models.Entities.General;
 using BlurFileFormats.Models.Entities.Shaders;
-using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFrameworkOld.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 

@@ -1,42 +1,20 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace BlurFileFormats.SerializationFramework.Attributes;
-
-public class AlignAttribute : IntegerMetaAttribute
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+public class AlignAttribute : ValueAttribute<int>
 {
-    public int Align { get; }
-    public DataPath? Path { get; }
-    public AlignAttribute(int align)
+    public AlignAttribute(int value) : base(value)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(align, 0);
-        Align = align;
-    }
-    public AlignAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "")
-    {
-        expression = expression.Trim();
-        if (expression.StartsWith("nameof("))
-        {
-            Path = new DataPath(expression[7..^1].Replace(" ", ""));
-        } else
-        {
-            Path = new DataPath(path);
-        }
     }
 
-    public static long GetAlignOffset(long position, long align) => ((position + align - 1) & -align) - position;
-
-    public static void AlignStream(int align, BinaryReader reader)
+    public AlignAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "") : base(path, expression)
     {
-        long alignOffset = GetAlignOffset(reader.BaseStream.Position, align);
-        reader.BaseStream.Seek(alignOffset, SeekOrigin.Current);
-    }
-    public static void AlignStream(int align, BinaryWriter writer)
-    {
-        long alignOffset = GetAlignOffset(writer.BaseStream.Position, align);
-        for (long i = 0; i < alignOffset; i++)
-        {
-            writer.Write((byte)0);
-        }
     }
 }

@@ -43,7 +43,6 @@ public class FlaskEntity
     [Length(nameof(FieldsBlob.Count))]
     [AllowNull]
     [Read] public FlaskFieldEntity[] Fields { get; set; }
-    [IgnorePrint]
     public Encoding Encoding { get; } = new FlaskEncoding();
     [Length(nameof(StringsBlob.Count))]
     [Encoding(nameof(Encoding))]

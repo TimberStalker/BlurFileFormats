@@ -1,28 +1,17 @@
-﻿using System.Reflection;
-using System.Reflection.PortableExecutable;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 
 namespace BlurFileFormats.SerializationFramework.Attributes;
 
-[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-public class LengthAttribute : Attribute
+public class LengthAttribute : ValueAttribute<int>
 {
-    public int Length { get; }
-    public DataPath? Path { get; }
-    public LengthAttribute(int length)
+    public int Depth { get; }
+    public LengthAttribute(int value, int depth = 0) : base(value)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(length, 0);
-        Length = length;
+        Depth = depth;
     }
-    public LengthAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "")
+
+    public LengthAttribute(string path, int depth = 0, [CallerArgumentExpression(nameof(path))] string expression = "") : base(path, expression)
     {
-        expression = expression.Trim();
-        if (expression.StartsWith("nameof("))
-        {
-            Path = new DataPath(expression[7..^1].Replace(" ", ""));
-        } else
-        {
-            Path = new DataPath(path);
-        }
+        Depth = depth;
     }
 }

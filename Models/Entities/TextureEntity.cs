@@ -1,4 +1,4 @@
-﻿using BlurFileFormats.SerializationFramework.Attributes;
+﻿using BlurFileFormats.SerializationFrameworkOld.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 

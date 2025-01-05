@@ -1,5 +1,5 @@
 ﻿using BlurFileFormats.Models.Entities.Shaders;
-using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFrameworkOld.Attributes;
 
 namespace BlurFileFormats.Models.Entities;
 

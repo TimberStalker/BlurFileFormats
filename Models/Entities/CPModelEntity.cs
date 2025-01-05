@@ -4,8 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using BlurFileFormats.SerializationFramework;
-using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFrameworkOld;
+using BlurFileFormats.SerializationFrameworkOld.Attributes;
 
 namespace BlurFileFormats.Models.Entities;
 public class CPModelEntity

@@ -1,4 +1,4 @@
-﻿using BlurFileFormats.SerializationFramework;
+﻿using BlurFileFormats.SerializationFrameworkOld;
 using BlurFileFormats.Utils;
 using BlurFileFormats.XtFlask.Components;
 using BlurFileFormats.XtFlask.Entities;
@@ -33,6 +33,9 @@ public static class Flask
         CreateRefs(flaskEntity, db.Types, db.References);
 
         return db;
+    }
+    public static void Export(XtDb db, Stream destination)
+    {
     }
 
     private static void CreateRefs(FlaskEntity flaskEntity, List<IXtType> types, List<IXtRef> references)
