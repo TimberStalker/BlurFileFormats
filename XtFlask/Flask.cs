@@ -1,4 +1,4 @@
-﻿using BlurFileFormats.SerializationFrameworkOld;
+﻿using BlurFileFormats.SerializationFramework;
 using BlurFileFormats.Utils;
 using BlurFileFormats.XtFlask.Components;
 using BlurFileFormats.XtFlask.Entities;
@@ -17,7 +17,11 @@ using System.Threading.Tasks;
 namespace BlurFileFormats.XtFlask;
 public static class Flask
 {
-    static DataSerializer<FlaskEntity> FlaskSerializer { get; } = DataSerializer.Build<FlaskEntity>();
+    static Flask()
+    {
+        DataSerializer.TryAddEncoding("flask", new FlaskEncoding());
+    }
+    static DataSerializer FlaskSerializer { get; } = DataSerializer.Create(typeof(FlaskEntity));
     public static XtDb Import(string file)
     {
         using var fileStream = File.OpenRead(file);
@@ -25,8 +29,8 @@ public static class Flask
     }
     public static XtDb Import(Stream source)
     {
-        var flaskEntity = FlaskSerializer.Deserialize(source);
-
+        var flaskEntity = (FlaskEntity)FlaskSerializer.Read(source);
+        if(source.Length != source.Position) throw new Exception("Not all read");
         var db = new XtDb();
         
         CreateFlaskTypes(flaskEntity, db.Types);

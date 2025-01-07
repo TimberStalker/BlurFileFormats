@@ -1,4 +1,4 @@
-﻿using BlurFileFormats.SerializationFrameworkOld.Attributes;
+﻿using BlurFileFormats.SerializationFramework.Attributes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BlurFileFormats.Models.Entities;

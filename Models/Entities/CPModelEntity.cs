@@ -4,16 +4,14 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using BlurFileFormats.SerializationFrameworkOld;
-using BlurFileFormats.SerializationFrameworkOld.Attributes;
+using BlurFileFormats.SerializationFramework;
+using BlurFileFormats.SerializationFramework.Attributes;
 
 namespace BlurFileFormats.Models.Entities;
 public class CPModelEntity
 {
-    [FileSpecifier("  CP")]
     [Length(4)]
-    [AllowNull]
-    [Read] public string File { get; set; }
+    [Read] public string File => "  CP";
     [AllowNull]
     [Read] public ModelEntity Model { get; set; }
 }

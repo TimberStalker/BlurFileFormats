@@ -1,6 +1,6 @@
 ﻿using BlurFileFormats.Models.Entities.General;
 using BlurFileFormats.Models.Entities.Shaders;
-using BlurFileFormats.SerializationFrameworkOld.Attributes;
+using BlurFileFormats.SerializationFramework.Attributes;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 
@@ -54,8 +54,12 @@ public class SceneEntity
 {
     [AllowNull]
     [Read] public SectionEntity Section { get; set; }
-    [Position]
-    [Read] public int SceneStart { get; set; }
+    [Anchor]
+    [AllowNull]
+    [Read] public SceneContentEntity SceneContent { get; set; }
+}
+public class SceneContentEntity
+{
     [AllowNull]
     [Read] public ArchEntity Arch1 { get; set; }
     [AllowNull]
@@ -144,8 +148,7 @@ public class SceneEntity
     [Read] public int Unknown64 { get; set; }
     [Read] public int V1 => 0x4152;
     [Read] public PlatformType PlatformType { get; set; }
-    [Length(4)]
-    [Read] public bool IgnoreBuffers { get; set; }
+    [Read] public LargeBool IgnoreBuffers { get; set; }
     [Read] public int V2 => 0x4152;
     [AllowNull]
     [Read] public VertexBufferEntity[] VertexBuffers { get; set; }
@@ -159,6 +162,10 @@ public class SceneEntity
 public class TextureListEntity
 {
     [Read] public int V1 => 0x4152;
+}
+public enum LargeBool
+{
+    False,
 }
 public enum TextureAdress
 {

@@ -43,9 +43,8 @@ public class FlaskEntity
     [Length(nameof(FieldsBlob.Count))]
     [AllowNull]
     [Read] public FlaskFieldEntity[] Fields { get; set; }
-    public Encoding Encoding { get; } = new FlaskEncoding();
     [Length(nameof(StringsBlob.Count))]
-    [Encoding(nameof(Encoding))]
+    [Encoding("flask")]
     [AllowNull]
     [Read] public string Strings { get; set; }
 
@@ -62,8 +61,6 @@ public class FlaskEntity
     [Read] public FlaskComponentEntity[] Components { get; set; }
 
     [Align(4)]
-    [Read] public int Align { get; set; }
-
     [Length(nameof(DataBlob.Count))]
     [AllowNull]
     [Read] public byte[] Data { get; set; }

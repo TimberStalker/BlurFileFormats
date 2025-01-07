@@ -1,4 +1,4 @@
-﻿using BlurFileFormats.SerializationFrameworkOld.Attributes;
+﻿using BlurFileFormats.SerializationFramework.Attributes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BlurFileFormats.Models.Entities;
@@ -16,8 +16,6 @@ public class IndexBufferEntity
     [Read] public CompressionType CompressionType { get; set; }
     [Read] public bool EndianSwap { get; set; }
     [Align(nameof(Alignment))]
-    [AllowNull]
-    [Read] public byte AlignBytes { get; set; }
     [Length(nameof(Size))]
     [AllowNull]
     [Read] public byte[] VertexStream { get; set; }
