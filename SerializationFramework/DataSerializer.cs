@@ -1,4 +1,7 @@
 ﻿using BlurFileFormats.SerializationFramework.Attributes;
+using BlurFileFormats.SerializationFramework.Commands;
+using BlurFileFormats.SerializationFramework.Sources;
+using BlurFileFormats.SerializationFramework.Targets;
 using BlurFileFormats.XtFlask.Values;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;

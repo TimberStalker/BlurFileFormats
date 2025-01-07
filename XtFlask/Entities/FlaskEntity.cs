@@ -43,6 +43,7 @@ public class FlaskEntity
     [Length(nameof(FieldsBlob.Count))]
     [AllowNull]
     [Read] public FlaskFieldEntity[] Fields { get; set; }
+
     [Length(nameof(StringsBlob.Count))]
     [Encoding("flask")]
     [AllowNull]
