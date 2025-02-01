@@ -289,7 +289,7 @@ public class DataSerializer : ITargetBuffer
                 {
                     if (length != stringLengthAttribute.Value)
                     {
-                        System.Diagnostics.Debug.WriteLine("Length is truncated.");
+                        //System.Diagnostics.Debug.WriteLine("Length is truncated.");
                         length = stringLengthAttribute.Value;
                     }
                 }
@@ -305,7 +305,7 @@ public class DataSerializer : ITargetBuffer
                 {
                     if (length != lengthAttribute.Value)
                     {
-                        System.Diagnostics.Debug.WriteLine("Length is truncated.");
+                        //System.Diagnostics.Debug.WriteLine("Length is truncated.");
                         length = lengthAttribute.Value;
                     }
                 }
@@ -329,7 +329,7 @@ public class DataSerializer : ITargetBuffer
         {
 
             T value = reader(r);
-            System.Diagnostics.Debug.WriteLine(value);
+            //System.Diagnostics.Debug.WriteLine(value);
             return value;
         }, WriteAction = (w, info, v) => writer(w, (T)v!) };
     }
@@ -397,7 +397,7 @@ public class DataSerializer : ITargetBuffer
             ReadAction = (r, info) =>
             {
                 T? value = reader(r, info, attribute1, attribute2, attribute3, attribute4);
-                Debug.WriteLine(value);
+                //Debug.WriteLine(value);
                 return value;
             },
             WriteAction = (w, info, o) => writer(w, info, (T)o!, attribute1, attribute2, attribute3, attribute4),

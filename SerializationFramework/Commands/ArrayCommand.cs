@@ -22,16 +22,16 @@ public class ArrayCommand : ISerializerCommand
 
 
         var array = Array.CreateInstance(TargetType, length);
-        Debug.WriteLine($"{TargetType.Name}[{length}]");
-        Debug.Indent();
+        //Debug.WriteLine($"{TargetType.Name}[{length}]");
+        //Debug.Indent();
         for (int i = 0; i < length; i++)
         {
-            Debug.Write($"[{i}]: ");
-            Debug.Indent();
+            //Debug.Write($"[{i}]: ");
+            //Debug.Indent();
             array.SetValue(ChildCommand.Read(reader, readInfo), i);
-            Debug.Unindent();
+            //Debug.Unindent();
         }
-        Debug.Unindent();
+        //Debug.Unindent();
         return array;
     }
 

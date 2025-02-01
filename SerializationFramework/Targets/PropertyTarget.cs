@@ -19,7 +19,7 @@ public class PropertyTarget : ISerializerTarget
     {
         //try
         //{
-        Debug.Write($"{TargetProperty.Name}: ");
+        //Debug.Write($"{TargetProperty.Name}: ");
         object? targetValue = Command.Read(reader, readInfo);
         // {targetValue}");
         if (TargetProperty.SetMethod is null)
