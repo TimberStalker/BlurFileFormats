@@ -174,23 +174,6 @@ public enum TextureAdress
     Clamp,
     Border
 }
-[Target("RenderingData::RenderListNode_Common")]
-public class RenderListNodeEntity : IRenderingNodeDataEntity
-{
-    [Read] public int V1 => 0x4152;
-    [Read] public int V2 => 0x044152;
-    [AllowNull]
-    [Read] public RenderCullNodeEntity SuperNode { get; set; }
-    [Read] public int V3 => 0x4152;
-    [AllowNull]
-    [Read] public MaterialListEntity RenderPasses { get; set; }
-    [Read] public int Unknown32 { get; set; }
-    [Read] public int Unknown33 { get; set; }
-    [AllowNull]
-    [Read] public PrimitiveListEntity PrimitiveList { get; set; }
-    //[AllowNull]
-    //[Read] public AfterMeshEntity AfterMeshData { get; set; }
-}
 public enum PlatformType
 {
     Unknown = -1,
@@ -207,7 +190,9 @@ public class MaterialListEntity
 {
     [Read] public int V1 => 0x4152;
     [AllowNull]
-    [Read] public MaterialEntity[] MaterialTypes { get; set; }
+    [Read] public MaterialTypeEntity[] MaterialTypes { get; set; }
+    [Read] public int Unknown1 { get; set; }
+    [Read] public int Unknown2 { get; set; }
 }
 public class AfterMeshEntity
 {
@@ -277,10 +262,10 @@ public class AfterMeshData09 : IAfterMeshDataEntity
     [Read] public int Unknown8 { get; set; }
     [Read] public int Unknown9 { get; set; }
 }
-public class UnknownDatEntity
+public class ResourceIndex
 {
-    [Read] public int Unknown1 { get; set; }
-    [Read] public int Unknown2 { get; set; }
+    [Read] public int Block { get; set; }
+    [Read] public int Index { get; set; }
 }
 public class UnknownDatEntity2
 {

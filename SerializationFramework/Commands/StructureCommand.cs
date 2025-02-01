@@ -40,6 +40,7 @@ public class StructureCommand : ISerializerCommand
         Type targetType = GetTargetType(readInfo);
         object targetValue = Activator.CreateInstance(targetType)!;
         readInfo.ParentStack.Push(targetValue);
+        System.Diagnostics.Debug.WriteLine(targetType.Name);
         System.Diagnostics.Debug.Indent();
         foreach (var command in DataSerializer.CreateStructureSerializationTargets(targetType))
         {

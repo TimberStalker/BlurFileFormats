@@ -19,8 +19,9 @@ public class PropertyTarget : ISerializerTarget
     {
         //try
         //{
+        Debug.Write($"{TargetProperty.Name}: ");
         object? targetValue = Command.Read(reader, readInfo);
-        Debug.WriteLine($"{TargetProperty.Name}: {targetValue}");
+        // {targetValue}");
         if (TargetProperty.SetMethod is null)
         {
             var expectedValue = TargetProperty.GetValue(target);

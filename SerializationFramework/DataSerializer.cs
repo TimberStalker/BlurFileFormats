@@ -3,10 +3,12 @@ using BlurFileFormats.SerializationFramework.Commands;
 using BlurFileFormats.SerializationFramework.Sources;
 using BlurFileFormats.SerializationFramework.Targets;
 using BlurFileFormats.XtFlask.Values;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Text;
+using SwitchAttribute = BlurFileFormats.SerializationFramework.Attributes.SwitchAttribute;
 
 namespace BlurFileFormats.SerializationFramework;
 public interface ITargetBuffer
@@ -323,7 +325,13 @@ public class DataSerializer : ITargetBuffer
     }
     private static ISerializerCommand CreateAtomic<T>(Func<BinaryReader, T> reader, Action<BinaryWriter, T> writer)
     {
-        return new ValueCommand() { ReadAction = (r, info) => reader(r), WriteAction = (w, info, v) => writer(w, (T)v!) };
+        return new ValueCommand() { ReadAction = (r, info) =>
+        {
+
+            T value = reader(r);
+            System.Diagnostics.Debug.WriteLine(value);
+            return value;
+        }, WriteAction = (w, info, v) => writer(w, (T)v!) };
     }
     private static ISerializerCommand CreateReadable<T>(Func<BinaryReader, SerializerInfo, T>? reader, Action<BinaryWriter, SerializerInfo, T>? writer)
     {
@@ -386,7 +394,12 @@ public class DataSerializer : ITargetBuffer
         var attribute4 = property.GetCustomAttribute<U4>();
         return new ValueCommand
         {
-            ReadAction = (r, info) => reader(r, info, attribute1, attribute2, attribute3, attribute4),
+            ReadAction = (r, info) =>
+            {
+                T? value = reader(r, info, attribute1, attribute2, attribute3, attribute4);
+                Debug.WriteLine(value);
+                return value;
+            },
             WriteAction = (w, info, o) => writer(w, info, (T)o!, attribute1, attribute2, attribute3, attribute4),
         };
     }
