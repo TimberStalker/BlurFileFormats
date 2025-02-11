@@ -569,21 +569,27 @@ public static class Flask
                             item.Value = new XtBlock.ExportArrayPointerValue(arrayType, pointerBlock, (ushort)pointerBlock.Values.Count, (uint)arrayValue.Count);
                             for (int i = 0; i < arrayValue.Count; i++)
                             {
-
-                                var valueBlock = blocks.FirstOrDefault(b => b.BlockType == arrayValue.Values[i].Value.Type);
-                                if (valueBlock is null)
+                                if(arrayValue.Values[i].Value is XtNullValue)
                                 {
-                                    valueBlock = new XtBlock(arrayValue.Values[i].Value.Type);
-                                    blocks.Add(valueBlock);
-                                }
-                                if(!valueBlock.Values.Contains(arrayValue.Values[i].Value))
-                                {
-                                    pointerBlock.Add(new XtBlock.ExportPointerValue(pointerType, valueBlock, (ushort)valueBlock.Values.Count));
-                                    valueBlock.Add(arrayValue.Values[i].Value);
+                                    pointerBlock.Add(new XtBlock.ExportPointerValue(pointerType, null, ushort.MaxValue));
                                 }
                                 else
                                 {
-                                    pointerBlock.Add(new XtBlock.ExportPointerValue(pointerType, valueBlock, (ushort)valueBlock.Values.IndexOf(arrayValue.Values[i].Value)));
+                                    var valueBlock = blocks.FirstOrDefault(b => b.BlockType == arrayValue.Values[i].Value.Type);
+                                    if (valueBlock is null)
+                                    {
+                                        valueBlock = new XtBlock(arrayValue.Values[i].Value.Type);
+                                        blocks.Add(valueBlock);
+                                    }
+                                    if(!valueBlock.Values.Contains(arrayValue.Values[i].Value))
+                                    {
+                                        pointerBlock.Add(new XtBlock.ExportPointerValue(pointerType, valueBlock, (ushort)valueBlock.Values.Count));
+                                        valueBlock.Add(arrayValue.Values[i].Value);
+                                    }
+                                    else
+                                    {
+                                        pointerBlock.Add(new XtBlock.ExportPointerValue(pointerType, valueBlock, (ushort)valueBlock.Values.IndexOf(arrayValue.Values[i].Value)));
+                                    }
                                 }
                             }
                             for (int i = 0; i < arrayValue.Count; i++)
