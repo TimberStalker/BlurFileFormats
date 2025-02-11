@@ -52,6 +52,11 @@ public abstract class XtAtomType<T> : IXtType where T : notnull
         value.Value = Read(reader, resolver);
         return value;
     }
+
+    public void Emit(TypeTableBuilder types, List<FlaskBaseEntity> bases, List<FlaskFieldEntity> fields, StringTableBuilder stringTable)
+    {
+        throw new NotImplementedException();
+    }
 }
 public sealed class XtBoolType : XtAtomType<bool>
 {

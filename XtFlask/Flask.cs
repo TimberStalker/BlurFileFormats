@@ -40,6 +40,17 @@ public static class Flask
     }
     public static void Export(XtDb db, Stream destination)
     {
+        FlaskEntity entity = new();
+        TypeTableBuilder types = new();
+        List<FlaskBaseEntity> bases = new();
+        List<FlaskFieldEntity> fields = new();
+        StringTableBuilder stringTable = new();
+        foreach (var record in db.References)
+        {
+            record.Type.Emit(types, bases, fields, stringTable);
+        }
+        entity.Strings = stringTable.ToString();
+        FlaskSerializer.Write(destination, entity);
     }
 
     private static void CreateRefs(FlaskEntity flaskEntity, List<IXtType> types, List<IXtRef> references)
@@ -331,4 +342,61 @@ public class XtDb
 {
     public List<IXtType> Types { get; } = [];
     public List<IXtRef> References { get; } = [];
+}
+public class StringTableBuilder
+{
+    StringBuilder builder = new();
+    Dictionary<string, int> locationMappings = new();
+    public int GetIndex(string text)
+    {
+        if(locationMappings.TryGetValue(text, out var index)) return index;
+        int i = builder.Length;
+        builder.Append(text);
+        builder.Append('\0');
+        locationMappings[text] = i;
+        return i;
+    }
+    public override string ToString() => builder.ToString();
+}
+public class TypeTableBuilder
+{
+    List<FlaskTypeEntity> entities = new(); 
+    Dictionary<IXtType, int> indexTable = new();
+    Dictionary<IXtType, Action<int>> setTable = new();
+    public int Count => entities.Count;
+    public void GetIndex(IXtType type, Action<int> setAction)
+    {
+        if(indexTable.TryGetValue(type, out var value))
+        {
+            setAction(value);
+        }
+        else
+        {
+            if (setTable.ContainsKey(type))
+            {
+                setTable[type] += setAction;
+            }
+            else
+            {
+                setTable[type] = setAction;
+            }
+        }
+    }
+    public bool Contains(IXtType type) => indexTable.ContainsKey(type);
+    public void Add(FlaskTypeEntity type, IXtType baseType)
+    {
+        int newIndex = entities.Count;
+        entities.Add(type);
+        indexTable[baseType] = newIndex;
+        if (setTable.TryGetValue(baseType, out var action))
+        {
+            action(newIndex);
+        }
+        setTable.Remove(baseType);
+    }
+    public FlaskTypeEntity[] ToTypes()
+    {
+        if (setTable.Count > 0) Debug.WriteLine("Not all type indecies have been resolved.");
+        return entities.ToArray();
+    }
 }

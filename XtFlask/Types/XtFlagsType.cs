@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using BlurFileFormats.XtFlask.Entities;
 using BlurFileFormats.XtFlask.Values;
 
 namespace BlurFileFormats.XtFlask.Types;
@@ -21,5 +22,10 @@ public class XtFlagsType : IXtEnumType
         var value = CreateValue();
         value.Value = reader.ReadUInt32();
         return value;
+    }
+
+    public void Emit(TypeTableBuilder types, List<FlaskBaseEntity> bases, List<FlaskFieldEntity> fields, StringTableBuilder stringTable)
+    {
+        throw new NotImplementedException();
     }
 }

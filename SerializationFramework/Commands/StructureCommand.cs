@@ -53,7 +53,7 @@ public class StructureCommand : ISerializerCommand
 
     public void Write(BinaryWriter writer, SerializerInfo writeInfo, object? value)
     {
-        if (value is null) throw new Exception();
+        if (value is null) throw new Exception("Cannot write null values.");
         foreach (var command in DataSerializer.CreateStructureSerializationTargets(value.GetType()))
         {
             command.Serialize(writer, writeInfo, value);

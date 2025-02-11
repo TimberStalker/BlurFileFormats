@@ -1,4 +1,5 @@
 ﻿using BlurFileFormats.XtFlask.Components;
+using BlurFileFormats.XtFlask.Entities;
 using BlurFileFormats.XtFlask.Types.Fields;
 using BlurFileFormats.XtFlask.Values;
 using System;
@@ -38,6 +39,11 @@ public class XtArrayType : IXtType
             }
         }
     }
+
+    public void Emit(TypeTableBuilder types, List<FlaskBaseEntity> bases, List<FlaskFieldEntity> fields, StringTableBuilder stringTable)
+    {
+        throw new NotImplementedException();
+    }
 }
 public class XtPointerType : IXtType
 {
@@ -58,6 +64,7 @@ public class XtPointerType : IXtType
         resolver.AddResolver(new PointerItem(pointer, reader.ReadUInt16(), reader.ReadUInt16()));
         return pointer;
     }
+
     record PointerItem(XtPointerValue Value, ushort Component, ushort Offset) : IResolverItem
     {
         public void Resolve(IReadOnlyList<IXtRef> references, List<List<IRecordComponent>> refRecords)
@@ -65,6 +72,11 @@ public class XtPointerType : IXtType
             if (Component == ushort.MaxValue || Offset == ushort.MaxValue) return;
             Value.Reference = refRecords[Component][Offset].GetValue(references, refRecords);
         }
+    }
+
+    public void Emit(TypeTableBuilder types, List<FlaskBaseEntity> bases, List<FlaskFieldEntity> fields, StringTableBuilder stringTable)
+    {
+        throw new NotImplementedException();
     }
 }
 public class XtHandleType : IXtType
@@ -86,6 +98,8 @@ public class XtHandleType : IXtType
         resolver.AddResolver(new HandleItem(handle, reader.ReadUInt32()));
         return handle;
     }
+
+
     record HandleItem(XtHandleValue Value, uint Id) : IResolverItem
     {
         public void Resolve(IReadOnlyList<IXtRef> References, List<List<IRecordComponent>> RefRecords)
@@ -93,5 +107,9 @@ public class XtHandleType : IXtType
             if (Id == uint.MaxValue) return;
             Value.Reference = References[(int)Id];
         }
+    }
+    public void Emit(TypeTableBuilder types, List<FlaskBaseEntity> bases, List<FlaskFieldEntity> fields, StringTableBuilder stringTable)
+    {
+        throw new NotImplementedException();
     }
 }
