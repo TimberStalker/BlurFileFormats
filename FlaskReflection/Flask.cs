@@ -648,10 +648,10 @@ public static class Flask
                     break;
 
                 var block = GetOrAddBlock(blocks, arrayValue.Type.BaseType);
-                flattenedPointers.Add(arrayValue.Array, (block, (ushort)block.Values.Count));
                 switch (arrayValue.Type.BaseType)
                 {
                     case XtPointerType basePointerType:
+                        flattenedPointers.Add(arrayValue.Array, (block, (ushort)block.Values.Count));
                         for (int i = 0; i < arrayValue.Array.Count; i++)
                         {
                             if (arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) throw new UnreachableException();
@@ -674,6 +674,7 @@ public static class Flask
                         }
                         break;
                     case XtHandleType baseHandleType:
+                        flattenedPointers.Add(arrayValue.Array, (block, (ushort)block.Values.Count));
                         for (int i = 0; i < arrayValue.Array.Count; i++)
                         {
                             if (arrayValue.Array.Values[i].Value is not XtHandleValue hvalue) throw new UnreachableException();
@@ -681,11 +682,7 @@ public static class Flask
                         }
                         break;
                     case var c:
-                        //for (int i = 0; i < arrayValue.Array.Count; i++)
-                        //{
-                        //    flattenedPointers.Add(arrayValue.Array.Values[i].Value, (block, (ushort)block.Values.Count));
-                        //    block.Add(arrayValue.Array.Values[i].Value);
-                        //}
+                        flattenedPointers.Add(arrayValue.Array, (block, (ushort)block.Values.IndexOf(arrayValue.Array.Values[0].Value)));
                         for (int i = 0; i < arrayValue.Array.Count; i++)
                         {
                             FlattenValue(arrayValue.Array.Values[i].Value, refs, exportedTypes, blocks, flattenedPointers);
@@ -779,11 +776,19 @@ public static class Flask
         {
             var (block, offset) = pointers[v.Value];
             writer.Write((ushort)blocks.IndexOf(block));
+            if (writer.BaseStream.Position == 0)
+            {
+                ;
+            }
             writer.Write(offset);
         }
         else
         {
             writer.Write(ushort.MaxValue);
+            if (writer.BaseStream.Position == 0)
+            {
+                ;
+            }
             writer.Write(ushort.MaxValue);
         }
     }
