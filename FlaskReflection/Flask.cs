@@ -2,6 +2,7 @@
 using BlurFileFormats.SerializationFramework;
 using BlurFileFormats.Utils;
 using BlurFileFormats.XtFlask.Types;
+using BlurFileFormats.XtFlask.Values;
 using Microsoft.VisualBasic;
 using System.Collections;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks.Dataflow;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace BlurFileFormats.FlaskReflection;
@@ -159,20 +161,12 @@ public static class Flask
             Debug.Assert(recordBytesCount == recordEntity.DataBytes, $"Did not read the right amount of characters. Expected: {recordEntity.DataBytes} - Read: {recordBytesCount}");
             
             string text = textEncoding.GetString(reader.ReadBytes((int)recordEntity.StringBytes));
-            if(refEntity.Record == 55)
-            {
-                ;
-            }
             refBlocks.Add(blocks);
             texts.Add(text);
             refs.Add(new XtRef(refEntity.Id, blocks[0].Values[0]));
         }
         for(int i = 0; i < refs.Count; i++)
         {
-            if(i == 479)
-            {
-                ;
-            }
             var blocks = refBlocks[i];
             Dictionary<(int, int), XtArray> arrays = [];
             for(int j = 0; j < blocks.Count; j++)
@@ -249,7 +243,6 @@ public static class Flask
                         value.Value = new XtArrayValue(arrayPointerValue.Type, val);
                         for (int i = 0; i < val.Values.Count; i++)
                         {
-                            //val.Values.Add(new XtArrayItem(val, block.Values[arrayPointerValue.Offset + i]));
                             Reference(val.Values[i], refs, blocks, arrays, text);
                         }
                     }
@@ -320,16 +313,20 @@ public static class Flask
         List<FlaskComponentEntity> flaskComponents = [];
 
         List<List<XtBlock>> blocks = [];
+        List<Dictionary<IXtValue, (XtBlock block, ushort offset)>> refPointers = [];
         foreach(var item in refs)
         {
             List<XtBlock> components = [];
             blocks.Add(components);
+            Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers = [];
+            refPointers.Add(flattenedPointers);
 
             if (item is not XtRef xtref) continue;
 
             components.Add(new XtBlock(xtref.Type));
             components[0].Add(xtref.Value);
-            FlattenValue(xtref.Value, refs, db.Types, components, []);
+            FlattenValue_NonPointerAarray(xtref.Value, refs, db.Types, components, flattenedPointers, []);
+            FlattenValue(xtref.Value, refs, db.Types, components, flattenedPointers);
         }
         var textEncoding = new FlaskEncoding();
         using var memoryStream = new MemoryStream();
@@ -349,14 +346,14 @@ public static class Flask
             }
             long startPos = memoryStream.Position;
             StringTableBuilder stringsBuilder = new();
-            var firstComponent = components[0];
-            components = components.Skip(1).OrderBy(b => db.Types.IndexOf(b.BlockType is IXtCurryType c ? c.BaseType : b.BlockType)).ToList();
-            components.Insert(0, firstComponent);
+            //var firstComponent = components[0];
+            //components = components.Skip(1).OrderBy(b => db.Types.IndexOf(b.BlockType is IXtCurryType c ? c.BaseType : b.BlockType)).ToList();
+            //components.Insert(0, firstComponent);
             foreach (var component in components)
             {
                 foreach (var value in component.Values)
                 {
-                    WriteValue(value, writer, components, db.Types, stringsBuilder);
+                    WriteValue(value, writer, refs, refPointers[i], components, db.Types, stringsBuilder);
                 }
                 flaskComponents.Add(new FlaskComponentEntity
                 {
@@ -548,130 +545,162 @@ public static class Flask
         entity.DataBlob = new() { Count = entity.Data.Length, Offset = fileOffset };
         FlaskSerializer.Write(destination, entity);
     }
-    static void FlattenValue(IXtValue value, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<XtArray, IXtValue> flattenedArrays)
+    static void FlattenValue_NonPointerAarray(IXtValue value, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers, HashSet<IXtValue> searched)
     {
         if(value is IXtValueContainer container)
         {
             foreach (var item in container)
             {
-                FlattenItem(item, refs, exportedTypes, blocks, flattenedArrays);
+                FlattenItem_NonPointerAarray(item, refs, exportedTypes, blocks, flattenedPointers, searched);
             }
         } else if(value is XtArrayValue arrayValue && arrayValue.Array is not null)
         {
             foreach (var item in arrayValue.Array)
             {
-                FlattenItem(item, refs, exportedTypes, blocks, flattenedArrays);
+                FlattenItem_NonPointerAarray(item, refs, exportedTypes, blocks, flattenedPointers, searched);
             }
         }
     }
-    static void FlattenItem(IXtValueItem item, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<XtArray, IXtValue> flattenedArrays)
+    static void FlattenItem_NonPointerAarray(IXtValueItem item, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers, HashSet<IXtValue> searched)
     {
         switch(item.Value)
         {
             case XtArrayValue arrayValue:
-                if (arrayValue.Array is null || arrayValue.Array.Count == 0)
+                if (arrayValue.Array is not null && arrayValue.Array.Count > 0)
                 {
-                    item.Value = new XtBlock.ExportArrayPointerValue(arrayValue.Type, null, ushort.MaxValue, 0);
-                }
-                else
-                {
-                    if(flattenedArrays.TryGetValue(arrayValue.Array, out var exportValue))
+                    if (!searched.Add(arrayValue.Array))
                     {
-                        item.Value = exportValue;
+                        break;
                     }
-                    else
+                    var block = GetOrAddBlock(blocks, arrayValue.Type.BaseType);
+                    switch (arrayValue.Type.BaseType)
                     {
-                        switch (arrayValue.Type.BaseType)
-                        {
-                            case XtPointerType basePointerType:
-                                XtBlock pointerBlock = GetOrAddBlock(blocks, basePointerType);
-
-                                flattenedArrays[arrayValue.Array] = item.Value = new XtBlock.ExportArrayPointerValue(arrayValue.Type, pointerBlock, (ushort)pointerBlock.Values.Count, (uint)arrayValue.Array.Count);
-                                for (int i = 0; i < arrayValue.Array.Count; i++)
-                                {
-                                    if(arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) throw new UnreachableException();
-                                    if (pvalue.Value is null)
-                                    {
-                                        pointerBlock.Add(new XtBlock.ExportPointerValue(basePointerType, null, ushort.MaxValue));
-                                    }
-                                    else
-                                    {
-                                        var targetBlock = GetOrAddBlock(blocks, pvalue.Value.Type);
-                                    
-                                        if (!targetBlock.Values.Contains(pvalue.Value))
-                                        {
-                                            pointerBlock.Add(new XtBlock.ExportPointerValue(basePointerType, targetBlock, (ushort)targetBlock.Values.Count));
-                                            targetBlock.Add(pvalue.Value);
-                                        }
-                                        else
-                                        {
-                                            pointerBlock.Add(new XtBlock.ExportPointerValue(basePointerType, targetBlock, (ushort)targetBlock.Values.IndexOf(arrayValue.Array.Values[i].Value)));
-                                        }
-                                    }
-                                }
-                                for (int i = 0; i < arrayValue.Array.Count; i++)
-                                {
-                                    if(arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) break;
-                                    if(pvalue.Value is not null)
-                                    {
-                                        FlattenValue(pvalue.Value, refs, exportedTypes, blocks, flattenedArrays);
-                                    }
-                                }
-                                break;
-                            case XtHandleType baseHandleType:
-                                var handleBlock = GetOrAddBlock(blocks, baseHandleType);
-                                flattenedArrays[arrayValue.Array] = item.Value = new XtBlock.ExportArrayPointerValue(arrayValue.Type, handleBlock, (ushort)handleBlock.Values.Count, (uint)arrayValue.Array.Count);
-                                for (int i = 0; i < arrayValue.Array.Count; i++)
-                                {
-                                    if (arrayValue.Array.Values[i].Value is not XtHandleValue hvalue) break;
-                                    handleBlock.Add(new XtBlock.HandleValue(baseHandleType, hvalue.XtRef is null ? uint.MaxValue : (uint)refs.IndexOf(hvalue.XtRef)));
-                                }
-                                break;
-                            case var c:
-                                var block = GetOrAddBlock(blocks, c);
-                                flattenedArrays[arrayValue.Array] = item.Value = new XtBlock.ExportArrayPointerValue(arrayValue.Type, block, (ushort)block.Values.Count, (uint)arrayValue.Array.Count);
-                                for (int i = 0; i < arrayValue.Array.Count; i++)
-                                {
-                                    block.Add(arrayValue.Array.Values[i].Value);
-                                }
-                                for (int i = 0; i < arrayValue.Array.Count; i++)
-                                {
-                                    FlattenValue(arrayValue.Array.Values[i].Value, refs, exportedTypes, blocks, flattenedArrays);
-                                }
-                                break;
-                        }
+                        case XtHandleType baseHandleType: break;
+                        case XtPointerType basePointerType:
+                            for (int i = 0; i < arrayValue.Array.Count; i++)
+                            {
+                                if (arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) throw new UnreachableException();
+                                if (pvalue.Value is null) continue;
+                                if (!searched.Add(pvalue.Value)) continue;
+                                FlattenValue_NonPointerAarray(pvalue.Value, refs, exportedTypes, blocks, flattenedPointers, searched);
+                            }
+                            break;
+                        case var c:
+                            Debug.Assert(c is XtStructType or XtEnumType or XtAtomType);
+                            for (int i = 0; i < arrayValue.Array.Count; i++)
+                            {
+                                searched.Add(arrayValue.Array.Values[i].Value);
+                                flattenedPointers.Add(arrayValue.Array.Values[i].Value, (block, (ushort)block.Values.Count));
+                                block.Add(arrayValue.Array.Values[i].Value);
+                            }
+                            for (int i = 0; i < arrayValue.Array.Count; i++)
+                            {
+                                FlattenValue_NonPointerAarray(arrayValue.Array.Values[i].Value, refs, exportedTypes, blocks, flattenedPointers, searched);
+                            }
+                            break;
                     }
-                }
-                break;
-            case XtHandleValue handleValue:
-                item.Value = new XtBlock.HandleValue(handleValue.Type, handleValue.XtRef is null ? uint.MaxValue : (uint)refs.IndexOf(handleValue.XtRef));
-                break;
-            case XtPointerValue pointerValue:
-                if(pointerValue.Value is null)
-                {
-                    item.Value = new XtBlock.ExportPointerValue(pointerValue.Type, null, ushort.MaxValue);
                     break;
                 }
-                var valueBlock = blocks.FirstOrDefault(b => b.BlockType == pointerValue.Value.Type);
-                if (valueBlock is null)
+                break;
+            case XtPointerValue pointerValue:
+                if (pointerValue.Value is null) break;
+                if (!searched.Add(pointerValue.Value))
                 {
-                    valueBlock = new XtBlock(pointerValue.Value.Type);
-                    blocks.Add(valueBlock);
+                    break;
                 }
-                var value = pointerValue.Value;
-                if (!valueBlock.Values.Contains(value))
-                {
-                    item.Value = new XtBlock.ExportPointerValue(pointerValue.Type, valueBlock, (ushort)valueBlock.Values.Count);
-                    valueBlock.Add(value);
-                    FlattenValue(value, refs, exportedTypes, blocks, flattenedArrays);
-                }
-                else
-                {
-                    item.Value = new XtBlock.ExportPointerValue(pointerValue.Type, valueBlock, (ushort)valueBlock.Values.IndexOf(item.Value));
-                }
+                FlattenValue_NonPointerAarray(pointerValue.Value, refs, exportedTypes, blocks, flattenedPointers, searched);
                 break;
             case var c:
-                FlattenValue(c, refs, exportedTypes, blocks, flattenedArrays);
+                FlattenValue_NonPointerAarray(c, refs, exportedTypes, blocks, flattenedPointers, searched);
+                break;
+        }
+        return;
+    }
+    static void FlattenValue(IXtValue value, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers)
+    {
+        if (value is IXtValueContainer container)
+        {
+            foreach (var item in container)
+            {
+                FlattenItem(item, refs, exportedTypes, blocks, flattenedPointers);
+            }
+        }
+        else if (value is XtArrayValue arrayValue && arrayValue.Array is not null)
+        {
+            foreach (var item in arrayValue.Array)
+            {
+                FlattenItem(item, refs, exportedTypes, blocks, flattenedPointers);
+            }
+        }
+    }
+    static void FlattenItem(IXtValueItem item, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers)
+    {
+        switch(item.Value)
+        {
+            case XtArrayValue arrayValue:
+                if (arrayValue.Array is null || arrayValue.Array.Count <= 0)
+                    break;
+                if (flattenedPointers.ContainsKey(arrayValue.Array)) 
+                    break;
+
+                var block = GetOrAddBlock(blocks, arrayValue.Type.BaseType);
+                flattenedPointers.Add(arrayValue.Array, (block, (ushort)block.Values.Count));
+                switch (arrayValue.Type.BaseType)
+                {
+                    case XtPointerType basePointerType:
+                        for (int i = 0; i < arrayValue.Array.Count; i++)
+                        {
+                            if (arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) throw new UnreachableException();
+                            block.Add(pvalue);
+
+                            if (pvalue.Value is null || flattenedPointers.ContainsKey(pvalue.Value)) continue;
+
+                            var targetBlock = GetOrAddBlock(blocks, pvalue.Value.Type);
+
+                            flattenedPointers.Add(pvalue.Value, (targetBlock, (ushort)targetBlock.Values.Count));
+                            Debug.Assert(!targetBlock.Values.Contains(pvalue.Value));
+                            targetBlock.Add(pvalue.Value);
+                        }
+                        for (int i = 0; i < arrayValue.Array.Count; i++)
+                        {
+                            if (arrayValue.Array.Values[i].Value is not XtPointerValue pvalue) throw new UnreachableException();
+                            if (pvalue.Value is null) continue;
+
+                            FlattenValue(pvalue.Value, refs, exportedTypes, blocks, flattenedPointers);
+                        }
+                        break;
+                    case XtHandleType baseHandleType:
+                        for (int i = 0; i < arrayValue.Array.Count; i++)
+                        {
+                            if (arrayValue.Array.Values[i].Value is not XtHandleValue hvalue) throw new UnreachableException();
+                            block.Add(hvalue);
+                        }
+                        break;
+                    case var c:
+                        //for (int i = 0; i < arrayValue.Array.Count; i++)
+                        //{
+                        //    flattenedPointers.Add(arrayValue.Array.Values[i].Value, (block, (ushort)block.Values.Count));
+                        //    block.Add(arrayValue.Array.Values[i].Value);
+                        //}
+                        for (int i = 0; i < arrayValue.Array.Count; i++)
+                        {
+                            FlattenValue(arrayValue.Array.Values[i].Value, refs, exportedTypes, blocks, flattenedPointers);
+                        }
+                        break;
+                }
+                break;
+            case XtPointerValue pointerValue:
+                if (pointerValue.Value is null) break;
+                if (flattenedPointers.ContainsKey(pointerValue.Value)) break;
+
+                var valueBlock = GetOrAddBlock(blocks, pointerValue.Value.Type);
+
+                flattenedPointers.Add(pointerValue.Value, (valueBlock, (ushort)valueBlock.Values.Count));
+                valueBlock.Add(pointerValue.Value);
+                FlattenValue(pointerValue.Value, refs, exportedTypes, blocks, flattenedPointers);
+                break;
+            case var c:
+                FlattenValue(c, refs, exportedTypes, blocks, flattenedPointers);
                 break;
         }
         return;
@@ -689,7 +718,7 @@ public static class Flask
         return block;
     }
 
-    private static void WriteValue(IXtValue value, BinaryWriter writer, IList<XtBlock> blocks, List<IXtType> exportedTypes, StringTableBuilder stringBuilder)
+    private static void WriteValue(IXtValue value, BinaryWriter writer, IList<IXtRef> refs, Dictionary<IXtValue, (XtBlock block, ushort offset)> pointers, IList<XtBlock> blocks, List<IXtType> exportedTypes, StringTableBuilder stringBuilder)
     {
         switch (value)
         {
@@ -710,48 +739,49 @@ public static class Flask
             case XtStructValue v:
                 foreach (var item in v)
                 {
-                    WriteValue(item.Value, writer, blocks, exportedTypes, stringBuilder); 
+                    WriteValue(item.Value, writer, refs, pointers, blocks, exportedTypes, stringBuilder); 
                 }
                 break;
-            case XtBlock.ExportPointerValue v: WriteP(v, blocks, writer); break;
-            case XtBlock.HandleValue v: WriteH(v, writer); break;
-            case XtBlock.ExportArrayPointerValue v: WriteA(v, blocks, writer); break;
+            case XtPointerValue v: WritePointer(v, pointers, blocks, writer); break;
+            case XtArrayValue v: WriteArray(v, pointers, blocks, writer); break;
+            case XtHandleValue v: WriteHandle(v, refs, writer); break;
             default: throw new UnreachableException();
         };
     }
 
-    static void WriteA(XtBlock.ExportArrayPointerValue v, IList<XtBlock> blocks, BinaryWriter writer)
+    static void WriteArray(XtArrayValue v, Dictionary<IXtValue, (XtBlock block, ushort offset)> pointers, IList<XtBlock> blocks, BinaryWriter writer)
     {
-        if (v.Block is not null)
+        if (v.Array is null || v.Array.Count == 0)
         {
-            writer.Write((ushort)blocks.IndexOf(v.Block));
+            writer.Write(ushort.MaxValue);
+            writer.Write(ushort.MaxValue);
+            writer.Write(0);
+        }
+        else
+        {
+            var (block, offset) = pointers[v.Array];
+            writer.Write((ushort)blocks.IndexOf(block));
+            writer.Write(offset);
+            writer.Write((uint)v.Array.Count);
+        }
+    }
+    static void WriteHandle(XtHandleValue v, IList<IXtRef> refs, BinaryWriter writer)
+    {
+        writer.Write(v.XtRef is null ? uint.MaxValue : (uint)refs.IndexOf(v.XtRef));
+    }
+    static void WritePointer(XtPointerValue v, Dictionary<IXtValue, (XtBlock block, ushort offset)> pointers, IList<XtBlock> blocks, BinaryWriter writer)
+    {
+        if (v.Value is not null)
+        {
+            var (block, offset) = pointers[v.Value];
+            writer.Write((ushort)blocks.IndexOf(block));
+            writer.Write(offset);
         }
         else
         {
             writer.Write(ushort.MaxValue);
-        }
-        writer.Write(v.Offset);
-        writer.Write(v.Length);
-    }
-    static void WriteH(XtBlock.HandleValue v, BinaryWriter writer)
-    {
-        writer.Write(v.Handle);
-    }
-    static void WriteP(XtBlock.ExportPointerValue v, IList<XtBlock> blocks, BinaryWriter writer)
-    {
-        if (v.Block is not null)
-        {
-            writer.Write((ushort)blocks.IndexOf(v.Block));
-        }
-        else
-        {
             writer.Write(ushort.MaxValue);
         }
-        writer.Write(v.Offset);
-    }
-    static void WriteSI(XtBlock.StringIndexValue v, BinaryWriter writer)
-    {
-        writer.Write(v.Index);
     }
 }
 
@@ -835,35 +865,6 @@ class XtBlock
         public ushort Offset { get; }
         public uint Length { get; }
         public ArrayPointerValue(XtArrayType type, ushort block, ushort offset, uint length)
-        {
-            Type = type;
-            Block = block;
-            Offset = offset;
-            Length = length;
-        }
-    }
-
-    public class ExportPointerValue : IXtValue
-    {
-        public XtPointerType Type { get; }
-        IXtType IXtValue.Type => Type;
-        public XtBlock? Block { get; }
-        public ushort Offset { get; }
-        public ExportPointerValue(XtPointerType type, XtBlock? block, ushort offset)
-        {
-            Type = type;
-            Block = block;
-            Offset = offset;
-        }
-    }
-    public class ExportArrayPointerValue : IXtValue
-    {
-        public XtArrayType Type { get; }
-        IXtType IXtValue.Type => Type;
-        public XtBlock? Block { get; }
-        public ushort Offset { get; }
-        public uint Length { get; }
-        public ExportArrayPointerValue(XtArrayType type, XtBlock? block, ushort offset, uint length)
         {
             Type = type;
             Block = block;
