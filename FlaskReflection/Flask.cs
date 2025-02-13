@@ -181,6 +181,10 @@ public static class Flask
                             Reference(value, refs, blocks, arrays, texts[i]);
                         }
                     }
+                    if(block.BlockType is not XtPointerType or XtHandleType)
+                    {
+                        (refs[i] as XtRef)!.RefHeap.Add(block.Values[k]);
+                    }
                 }
             }
         }
@@ -817,7 +821,7 @@ public class XtRef : IXtRef, IXtValueItem
     object IXtValueItem.Key => Id;
     public IXtType Type => Value.Type;
     public IXtValue Value { get; set; }
-
+    public List<IXtValue> RefHeap { get; } = new();
     public XtRef(uint id, IXtValue value)
     {
         Value = value;
