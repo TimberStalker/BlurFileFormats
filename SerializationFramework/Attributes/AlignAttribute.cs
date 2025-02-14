@@ -18,3 +18,14 @@ public class AlignAttribute : ValueAttribute<int>
     {
     }
 }
+[AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+public class XorAttribute : ValueAttribute<string>
+{
+    public XorAttribute() : base("")
+    {
+    }
+
+    public XorAttribute(string path, [CallerArgumentExpression(nameof(path))] string expression = "") : base(path, expression)
+    {
+    }
+}

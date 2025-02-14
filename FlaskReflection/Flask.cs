@@ -1,8 +1,6 @@
 ﻿using BlurFileFormats.FlaskReflection.Entities;
 using BlurFileFormats.SerializationFramework;
 using BlurFileFormats.Utils;
-using BlurFileFormats.XtFlask.Types;
-using BlurFileFormats.XtFlask.Values;
 using Microsoft.VisualBasic;
 using System.Collections;
 using System.Diagnostics;
@@ -1142,6 +1140,23 @@ public class XtStructValue : IXtValueContainer
         Type = type;
         Values.AddRange(fields.Zip(values, (f, v) => new XtFieldValueItem(f, v)));
     }
+    public XtAtomValue<T> GetField<T>(string name) where T : notnull
+    {
+        return (GetFieldItem(name).Value as XtAtomValue<T>)!;
+    }
+    public XtFieldValueItem GetFieldItem(string name)
+    {
+        var valueSpan = CollectionsMarshal.AsSpan(Values);
+        for(int i = 0; i < valueSpan.Length; i++)
+        {
+            var field = valueSpan[i];
+            if(field.Field.Name == name)
+            {
+                return field;
+            }
+        }
+        throw new KeyNotFoundException(name);
+    }
     public override string ToString() => $"{{{Values.Count}}}";
 
     public IEnumerator<IXtValueItem> GetEnumerator() => Values.GetEnumerator();
@@ -1316,14 +1331,15 @@ public class XtAtomValue<T> : IXtValue where T : notnull
 {
     public XtAtomType Type { get; }
     IXtType IXtValue.Type => Type;
-    public T Value { get; set; }
+    T value;
+    public T Value { get => value; set => this.value = value; }
 
     public XtAtomValue(XtAtomType type, T value)
     {
         Type = type;
-        Value = value;
+        this.value = value;
     }
-
+    internal ref T GetRef() => ref value;
     public override string ToString() => Value.ToString() ?? "";
 }
 public static class StringExtensions

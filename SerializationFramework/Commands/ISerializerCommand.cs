@@ -1,5 +1,4 @@
-﻿using BlurFileFormats.XtFlask.Values;
-using System.Reflection.PortableExecutable;
+﻿using System.Reflection.PortableExecutable;
 
 namespace BlurFileFormats.SerializationFramework.Commands;
 public interface ISerializerCommand

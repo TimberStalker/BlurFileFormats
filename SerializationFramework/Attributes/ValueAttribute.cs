@@ -6,7 +6,7 @@ namespace BlurFileFormats.SerializationFramework.Attributes;
 public abstract class ValueAttribute<T> : Attribute
 {
     public string? Path { get; }
-    public T? Value { get; }
+    public T? Value { get; init; }
     [MemberNotNullWhen(false, nameof(Path))]
     [MemberNotNullWhen(true, nameof(Value))]
     public bool IsValue { get; }

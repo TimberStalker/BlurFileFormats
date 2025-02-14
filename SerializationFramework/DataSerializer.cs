@@ -2,7 +2,6 @@
 using BlurFileFormats.SerializationFramework.Commands;
 using BlurFileFormats.SerializationFramework.Sources;
 using BlurFileFormats.SerializationFramework.Targets;
-using BlurFileFormats.XtFlask.Values;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -195,7 +194,7 @@ public class DataSerializer : ITargetBuffer
 
     private static ISerializerCommand CreateStringCommand(PropertyInfo property, int depth)
     {
-        return CreateReadable<string, LengthAttribute, StringLengthAttribute, CStringAttribute, EncodingAttribute>(property, (reader, info, lengthAttribute, stringLengthAttribute, cstringAttribute, encodingAttribute) =>
+        return CreateReadable<string, LengthAttribute, StringLengthAttribute, CStringAttribute, EncodingAttribute, XorAttribute>(property, (reader, info, lengthAttribute, stringLengthAttribute, cstringAttribute, encodingAttribute, xorAttribute) =>
         {
             int length;
             if (stringLengthAttribute is not null)
@@ -234,9 +233,22 @@ public class DataSerializer : ITargetBuffer
             }
             else encoding = Encoding.ASCII;
 
+            string? xorKey = null;
+            if(xorAttribute is not null)
+            {
+                if(xorAttribute.Path is not null)
+                {
+                    xorKey = info.GetValue(xorAttribute.Path) as string;
+                }
+                else
+                {
+                    xorKey = xorAttribute.Value;
+                }
+            }
+
+            byte[] bytes;
             if (cstringAttribute is not null)
             {
-                byte[] bytes;
                 if (length is int count)
                 {
                     bytes = reader.ReadBytes(count);
@@ -250,20 +262,22 @@ public class DataSerializer : ITargetBuffer
                         memoryStream.WriteByte(nextByte);
                         nextByte = reader.ReadByte();
                     }
-                    return encoding.GetString(memoryStream.ToArray());
+                    bytes = memoryStream.ToArray();
                 }
-
-                return encoding.GetString(bytes);
             }
             else
             {
                 int count = length;
-                var bytes = reader.ReadBytes(count);
-
-                return encoding.GetString(bytes);
+                bytes = reader.ReadBytes(count);
             }
+            if(xorKey is not null && xorKey.Length > 0)
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] ^= (byte)xorKey[i % xorKey.Length];
+            }
+            return encoding.GetString(bytes);
         },
-        (writer, info, text, lengthAttribute, stringLengthAttribute, cStringAttribute, encodingAttribute) =>
+        (writer, info, text, lengthAttribute, stringLengthAttribute, cStringAttribute, encodingAttribute, xorAttribute) =>
         {
             Encoding? encoding;
             if (encodingAttribute is not null)
@@ -401,6 +415,29 @@ public class DataSerializer : ITargetBuffer
                 return value;
             },
             WriteAction = (w, info, o) => writer(w, info, (T)o!, attribute1, attribute2, attribute3, attribute4),
+        };
+    }
+    private static ISerializerCommand CreateReadable<T, U1, U2, U3, U4, U5>(PropertyInfo property, Func<BinaryReader, SerializerInfo, U1?, U2?, U3?, U4?, U5?, T> reader, Action<BinaryWriter, SerializerInfo, T, U1?, U2?, U3?, U4, U5?> writer)
+        where U1 : Attribute
+        where U2 : Attribute
+        where U3 : Attribute
+        where U4 : Attribute
+        where U5 : Attribute
+    {
+        var attribute1 = property.GetCustomAttribute<U1>();
+        var attribute2 = property.GetCustomAttribute<U2>();
+        var attribute3 = property.GetCustomAttribute<U3>();
+        var attribute4 = property.GetCustomAttribute<U4>();
+        var attribute5 = property.GetCustomAttribute<U5>();
+        return new ValueCommand
+        {
+            ReadAction = (r, info) =>
+            {
+                T? value = reader(r, info, attribute1, attribute2, attribute3, attribute4, attribute5);
+                //Debug.WriteLine(value);
+                return value;
+            },
+            WriteAction = (w, info, o) => writer(w, info, (T)o!, attribute1, attribute2, attribute3, attribute4, attribute5),
         };
     }
 }
