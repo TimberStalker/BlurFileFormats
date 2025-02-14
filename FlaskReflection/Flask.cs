@@ -172,7 +172,7 @@ public static class Flask
                 var block = blocks[j];
                 for(int k = 0; k < block.Values.Count; k++)
                 {
-                    if(block.Values[k] is IXtValueContainer container)
+                    if(block.Values[k] is XtStructValue container)
                     {
                         foreach (var value in container)
                         {
@@ -196,7 +196,7 @@ public static class Flask
     {
         switch (value.Value)
         {
-            case IXtValueContainer container:
+            case XtStructValue container:
                 foreach (var item in container)
                 {
                     Reference(item, refs, blocks, arrays, text);
@@ -549,7 +549,7 @@ public static class Flask
     }
     static void FlattenValue_NonPointerAarray(IXtValue value, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers, HashSet<IXtValue> searched)
     {
-        if(value is IXtValueContainer container)
+        if(value is XtStructValue container)
         {
             foreach (var item in container)
             {
@@ -620,7 +620,7 @@ public static class Flask
     }
     static void FlattenValue(IXtValue value, List<IXtRef> refs, List<IXtType> exportedTypes, List<XtBlock> blocks, Dictionary<IXtValue, (XtBlock block, ushort offset)> flattenedPointers)
     {
-        if (value is IXtValueContainer container)
+        if (value is XtStructValue container)
         {
             foreach (var item in container)
             {
@@ -774,19 +774,11 @@ public static class Flask
         {
             var (block, offset) = pointers[v.Value];
             writer.Write((ushort)blocks.IndexOf(block));
-            if (writer.BaseStream.Position == 0)
-            {
-                ;
-            }
             writer.Write(offset);
         }
         else
         {
             writer.Write(ushort.MaxValue);
-            if (writer.BaseStream.Position == 0)
-            {
-                ;
-            }
             writer.Write(ushort.MaxValue);
         }
     }
@@ -924,10 +916,6 @@ public interface IXtValueItem
     public object Key { get; }
     public IXtValue Value { get; set; }
 }
-public interface IXtValueContainer : IXtValue, IEnumerable<IXtValueItem>
-{
-
-}
 public class XtPointerType : IXtCurryType
 {
     static Dictionary<IXtType, XtPointerType> pointerTypes = [];
@@ -1048,7 +1036,7 @@ public class XtArrayValue : IXtValue
 
     public override string ToString() => $"{Type} = [{Array?.Values.Count.ToString() ?? "null"}]";
 }
-public class XtArray : IXtValueContainer
+public class XtArray : IXtValue, IEnumerable<XtArrayItem>
 {
     public XtArrayType Type { get; }
     IXtType IXtValue.Type => Type;
@@ -1060,7 +1048,7 @@ public class XtArray : IXtValueContainer
     }
     public void Add(IXtValue value) => Values.Add(new XtArrayItem(this, value));
     public override string ToString() => $"{Type} = [{Values.Count}]";
-    public IEnumerator<IXtValueItem> GetEnumerator() => Values.GetEnumerator();
+    public IEnumerator<XtArrayItem> GetEnumerator() => Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 public class XtArrayItem : IXtValueItem
@@ -1129,7 +1117,7 @@ public class XtStructField
     public IXtValue InitValue() => TargetType.CreateValue();
     public override string ToString() => $"{TargetType} {Name}";
 }
-public class XtStructValue : IXtValueContainer
+public class XtStructValue : IXtValue, IEnumerable<XtFieldValueItem>
 {
     public XtStructType Type { get; }
     IXtType IXtValue.Type => Type;
@@ -1159,7 +1147,7 @@ public class XtStructValue : IXtValueContainer
     }
     public override string ToString() => $"{{{Values.Count}}}";
 
-    public IEnumerator<IXtValueItem> GetEnumerator() => Values.GetEnumerator();
+    public IEnumerator<XtFieldValueItem> GetEnumerator() => Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 public class XtFieldValueItem : IXtValueItem
