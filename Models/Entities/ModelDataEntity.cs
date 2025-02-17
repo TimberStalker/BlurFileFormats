@@ -20,9 +20,9 @@ public class ModelDataEntity
     [AllowNull]
     [Read] public StringTableEntity StringTable { get; set; }
     [AllowNull]
-    [Read] public ModelsEntity Models { get; set; }
+    [Read] public ModelListEntity Models { get; set; }
     [AllowNull]
-    [Read] public ElementsEntity Elements { get; set; }
+    [Read] public ElementListEntity Elements { get; set; }
     [AllowNull]
     [Read] public ConstructionEntity Construction { get; set; }
 

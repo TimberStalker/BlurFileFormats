@@ -10,7 +10,7 @@ public enum PrimitveType
     QuadList,
     QuadStrip
 }
-public enum CullMode
+public enum FaceCullMode
 {
     None,
     Normal,
@@ -60,7 +60,7 @@ public class PrimitiveEntity
     [Read] public BlendFactor BlendFactor { get; set; }
     [Read] public BlendOperation BlendOperation { get; set; }
     [Read] public int Unknown13 { get; set; }
-    [Read] public CullMode CullMode { get; set; }
+    [Read] public FaceCullMode CullMode { get; set; }
     [Read] public int ListIndex { get; set; }
 
     [Read] public int V5 => 0x4152;

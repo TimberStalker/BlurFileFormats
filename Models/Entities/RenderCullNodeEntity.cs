@@ -3,10 +3,6 @@ using BlurFileFormats.SerializationFramework.Attributes;
 using System.Diagnostics.CodeAnalysis;
 
 namespace BlurFileFormats.Models.Entities;
-public class NodeEntity
-{
-
-}
 [Target("RenderingData::CullNode")]
 public class RenderCullNodeEntity : IRenderingNodeDataEntity
 {

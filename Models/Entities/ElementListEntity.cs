@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace BlurFileFormats.Models.Entities;
 
-public class ElementsEntity
+public class ElementListEntity
 {
     [AllowNull]
     [Read] public SectionEntity Section { get; set; }

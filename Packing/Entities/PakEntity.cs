@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,20 +19,32 @@ public class PreHeaderEntity
     [Length(4)]
     [Read] public string Header => "2KAP";
     [Read] public int Version => 2;
-    [Read] public uint Align { get; set; }
-    [Read] public uint Dummy4 { get; set; }
-    [Read] public uint Dummy5 { get; set; }
-    [Read] public uint Dummy6 { get; set; }
-    [Read] public uint Dummy7 { get; set; }
-    [Read] public uint Dummy8 { get; set; }
-    [Read] public uint Dummy9 { get; set; }
-    [Read] public uint Dummy10 { get; set; }
-    [Read] public uint Dummy11 { get; set; }
-    [Read] public uint Dummy12 { get; set; }
-    [Read] public uint Dummy13 { get; set; }
-    [Read] public uint Dummy14 { get; set; }
-    public string XorKey => @"VXo40j3@$%\\%`x";
-    [Align(nameof(Align))]
-    [Xor(nameof(XorKey))]
-    [Read] public string Names { get; set; } = "";
+    [Read] public uint SectorSize { get; set; }
+}
+public class PakHeader
+{
+    [Length(20)]
+    [Read] public byte[] Hash { get; set; }
+    [Read] public byte Codec { get; set; }
+    [Read] public byte FatEntryType { get; set; }
+    public uint FatEntrySize()
+    {
+        uint v1 = (uint)((int)(FatEntryType ^ 1) >> 0x1f);
+        uint v2 = (uint)(((int)(v1 - (v1 ^ FatEntryType ^ 1)) >> 0x1f & 0xffffffc8) + 0x38);
+        if(FatEntryType == 0)
+        {
+            return 0x20;
+        }
+        return v2;
+    }
+    [Read] public char PathSeparator { get; set; }
+    [Read] public byte Unused { get; set; }
+    [Read] public uint CodecFlags { get; set; }
+    [Read] public uint MetaStrOffset { get; set; }
+    [Read] public ulong FileTime { get; set; }
+}
+enum FatEntryType : byte
+{
+    Normal,
+    Secure
 }
