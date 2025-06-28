@@ -12,7 +12,7 @@ public class TextureEntity
     [Read] public int Unknown1 { get; set; }
     [Read] public int Unknown2 { get; set; }
     [Read] public int Unknown3 { get; set; }
-    [Read] public int Unknown4 { get; set; }
+    [Read] public PlatformType PlatformType { get; set; }
     [Encoding("utf-8")]
     [AllowNull]
     [Read] public string FileName2 { get; set; }
@@ -32,20 +32,15 @@ public class TextureEntity
     [Read] public int Length { get; set; }
     [Read] public int Height { get; set; }
     [Read] public int Width { get; set; }
-
     public int Pitch => (Width * 1024 + 7) / 8;
-
     [Read] public int Unknown17 { get; set; }
-
     [Read] public int Mipmaps { get; set; }
     [Length(4)]
     [AllowNull]
     [Read] public string DxtVersion { get; set; }
-
     [Read] public int Unknown18 { get; set; }
     [Read] public int Unknown19 { get; set; }
     public int TextureLength => Length - 0x1C;
-
     [Length(nameof(TextureLength))]
     [AllowNull]
     [Read] public byte[] TextureBytes { get; set; }

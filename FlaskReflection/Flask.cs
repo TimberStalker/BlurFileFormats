@@ -3,6 +3,7 @@ using BlurFileFormats.SerializationFramework;
 using BlurFileFormats.Utils;
 using Microsoft.VisualBasic;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -160,7 +161,7 @@ public static class Flask
             string text = textEncoding.GetString(reader.ReadBytes((int)recordEntity.StringBytes));
             refBlocks.Add(blocks);
             texts.Add(text);
-            refs.Add(new XtRef(blocks[0].Values[0]));
+            refs.Add(new XtRef(refEntity.Id, blocks[0].Values[0]));
         }
 
         XtDatabase xtDatabase = new XtDatabase();
@@ -224,10 +225,6 @@ public static class Flask
                 }
                 else
                 {
-                    if (refs[handleValue.Handle].Id == 4047270086)
-                    {
-                        ;
-                    }
                     value.Value = handleValue.Type.CreateValue(refs[handleValue.Handle].Id);
                 }
                 break;
@@ -838,11 +835,13 @@ public class XtDatabase
 }
 public class XtRef
 {
+    public uint Handle { get; set; }
     public IXtType Type => Value.Type;
     public IXtValue Value { get; set; }
     public List<IXtValue> RefHeap { get; } = new();
-    public XtRef(IXtValue value)
+    public XtRef(uint handle, IXtValue value)
     {
+        Handle = handle;
         Value = value;
     }
 
@@ -941,7 +940,7 @@ public interface IXtValueItem
 }
 public class XtPointerType : IXtCurryType
 {
-    static Dictionary<IXtType, XtPointerType> pointerTypes = [];
+    static ConcurrentDictionary<IXtType, XtPointerType> pointerTypes = [];
     public string Name => BaseType.Name;
     public int Size => 4;
     public IXtType BaseType { get; }
@@ -980,7 +979,7 @@ public class XtPointerValue : IXtValue
 }
 public class XtHandleType : IXtCurryType
 {
-    static Dictionary<IXtType, XtHandleType> handleTypes = [];
+    static ConcurrentDictionary<IXtType, XtHandleType> handleTypes = [];
     public string Name => BaseType.Name;
     public int Size => 4;
     public IXtType BaseType { get; }
@@ -1021,7 +1020,7 @@ public class XtHandleValue : IXtValue
 }
 public class XtArrayType : IXtCurryType
 {
-    static Dictionary<IXtType, XtArrayType> arrayTypes = [];
+    static ConcurrentDictionary<IXtType, XtArrayType> arrayTypes = [];
     public string Name => BaseType.Name;
     public int Size => 8;
     public IXtType BaseType { get; }

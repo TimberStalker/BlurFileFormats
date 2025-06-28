@@ -131,10 +131,7 @@ public static class LocalizationSerializer
 
         using (var writer = new BinaryWriter(stream, Encoding.ASCII, true))
         {
-            writer.Write('O');
-            writer.Write('L');
-            writer.Write('T');
-            writer.Write('X');
+            writer.Write("OLTX"u8);
             writer.Write(1);
             writer.Write(16);
 
