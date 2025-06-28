@@ -1154,6 +1154,10 @@ public class XtStructValue : IXtValue, IEnumerable<XtFieldValueItem>
     {
         return (GetFieldItem(name).Value as XtAtomValue<T>)!;
     }
+    public ref T GetFieldRef<T>(string name) where T : notnull
+    {
+        return ref (GetFieldItem(name).Value as XtAtomValue<T>)!.GetRef();
+    }
     public XtFieldValueItem GetFieldItem(string name)
     {
         var valueSpan = CollectionsMarshal.AsSpan(Values);
@@ -1351,6 +1355,8 @@ public class XtAtomValue<T> : IXtValue where T : notnull
     }
     internal ref T GetRef() => ref value;
     public override string ToString() => Value.ToString() ?? "";
+
+    public static implicit operator T(XtAtomValue<T> value) => value.Value;
 }
 public static class StringExtensions
 {
