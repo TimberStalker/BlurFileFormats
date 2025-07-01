@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks.Dataflow;
 using static BlurFileFormats.FlaskReflection.XtBlock;
@@ -960,6 +961,14 @@ public class XtPointerType : IXtCurryType
     public IXtValue CreateValue() => new XtPointerValue(this);
     public XtPointerValue CreateValue(IXtValue value) => new XtPointerValue(this, value);
     public override string ToString() => $"{BaseType}*";
+    public override bool Equals(object? obj)
+    {
+        return obj is XtPointerType p && BaseType.Name == p.BaseType.Name;
+    }
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(BaseType.GetHashCode(), "*");
+    }
 }
 public class XtPointerValue : IXtValue
 {
@@ -999,6 +1008,14 @@ public class XtHandleType : IXtCurryType
     public IXtValue CreateValue() => new XtHandleValue(this);
     public XtHandleValue CreateValue(uint reference) => new XtHandleValue(this, reference);
     public override string ToString() => $"{BaseType}^";
+    public override bool Equals(object? obj)
+    {
+        return obj is XtHandleType p && BaseType.Name == p.BaseType.Name;
+    }
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(BaseType.GetHashCode(), "^");
+    }
 }
 public class XtHandleValue : IXtValue
 {
@@ -1039,6 +1056,14 @@ public class XtArrayType : IXtCurryType
     }
     public IXtValue CreateValue() => new XtArrayValue(this);
     public override string ToString() => $"{BaseType}[]";
+    public override bool Equals(object? obj)
+    {
+        return obj is XtArrayType p && BaseType.Name == p.BaseType.Name;
+    }
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(BaseType.GetHashCode(), "[]");
+    }
 }
 public class XtArrayValue : IXtValue
 {
@@ -1123,6 +1148,8 @@ public class XtStructType : IXtType
         return value;
     }
     public override string ToString() => Name;
+    public override bool Equals(object? obj) => obj is XtStructType p && Name == p.Name;
+    public override int GetHashCode() => Name.GetHashCode();
 }
 public class XtStructField
 {
@@ -1210,6 +1237,8 @@ public class XtEnumType : IXtType
     }
 
     public override string ToString() => Name;
+    public override bool Equals(object? obj) => obj is XtEnumType p && Name == p.Name;
+    public override int GetHashCode() => Name.GetHashCode();
 }
 public class XtEnumValue : IXtValue
 {
@@ -1340,6 +1369,8 @@ public class XtAtomType : IXtType
     }
 
     public override string ToString() => Name;
+    public override bool Equals(object? obj) => obj is XtAtomType p && Name == p.Name;
+    public override int GetHashCode() => Name.GetHashCode();
 }
 public class XtAtomValue<T> : IXtValue where T : notnull
 {
