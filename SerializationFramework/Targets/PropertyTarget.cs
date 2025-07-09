@@ -27,7 +27,7 @@ public class PropertyTarget : ISerializerTarget
             var expectedValue = TargetProperty.GetValue(target);
             if (expectedValue?.Equals(targetValue) != true)
             {
-                throw new Exception($"Values do not match for {TargetProperty.DeclaringType!.Name}.{TargetProperty.Name} Expected: {expectedValue} | Read: {targetValue}");
+                throw new Exception($"Values do not match for {TargetProperty.DeclaringType!.Name}.{TargetProperty.Name} Expected: {ToStringMaxLength(expectedValue)} | Read: {ToStringMaxLength(targetValue)}");
             }
         }
         else
@@ -38,6 +38,17 @@ public class PropertyTarget : ISerializerTarget
         //{
         //    throw new Exception($"There was an error while reading {TargetProperty.DeclaringType!.Name}.{TargetProperty.Name}.", ex);
         //}
+    }
+    public string ToStringMaxLength(object? value, int maxLength = 20)
+    {
+        if (value is null) return "NULL";
+        var text = value.ToString();
+        if (text is null) return "NULL";
+        if(text.Length > maxLength)
+        {
+            text = text.Substring(0, maxLength);
+        }
+        return text;
     }
     public void Serialize(BinaryWriter writer, SerializerInfo writeInfo, object target)
     {

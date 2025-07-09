@@ -251,7 +251,8 @@ public class DataSerializer : ITargetBuffer
             {
                 if (length is int count)
                 {
-                    bytes = reader.ReadBytes(count);
+                    var cBytes = reader.ReadBytes(count);
+                    bytes = cBytes.TakeWhile(c => c != 0).ToArray();
                 }
                 else
                 {
