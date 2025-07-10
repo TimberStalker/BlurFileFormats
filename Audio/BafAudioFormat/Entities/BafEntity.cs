@@ -46,8 +46,8 @@ public class BafWavelEntity
     [Read] public uint SampleCount { get; set; }
     [Read] public bool Loops { get; set; }
     [Read] public byte Tracks { get; set; }
-    [Read] public byte ChannelCount { get; set; }
     [Read] public byte Pad { get; set; }
+    [Read] public byte ChannelCount { get; set; }
 
 }
 public class BafDataEntity
@@ -57,5 +57,5 @@ public class BafDataEntity
     [Read] public uint EntityLength { get; set; }
     public uint DataLength => EntityLength - 8;
     [Length(nameof(DataLength))]
-    [Read] public byte[] Data { get; set; } = [];
+    [Read] public byte[] Bytes { get; set; } = [];
 }
