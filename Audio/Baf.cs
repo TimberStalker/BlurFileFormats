@@ -39,7 +39,13 @@ public class Baf
         [ 0.234375f , -0.9375f    ], //[  15.0 / 64.0 , -60.0 / 64.0 ],
         [ 0.109375f , -0.9375f    ], //[   7.0 / 64.0 , -60.0 / 64.0 ],
 ];
-
+    static int[][] ps_adpcm_coefs_i = [
+        [   0 ,   0 ],
+        [  60 ,   0 ],
+        [ 115 , -52 ],
+        [  98 , -55 ],
+        [ 122 , -60 ]
+    ];
     public static Baf Parse(string filepath)
     {
         using var fileStream = File.OpenRead(filepath);
@@ -78,13 +84,13 @@ public class Baf
 
         Baf baf = new Baf(bafEntity.Header.Name);
 
+
+        int hist1 = 0;
+        int hist2 = 0;
         foreach (var (wavel, data) in bafEntity.Wavels.Zip(bafEntity.Data))
         {
             const int frameSize = 0x21;
             float[] audioStream = new float[wavel.SampleCount * wavel.ChannelCount];
-
-            float hist1 = 0;
-            float hist2 = 0;
 
             var samples = GetFrameSamples(data.Bytes, frameSize);
 
@@ -99,7 +105,9 @@ public class Baf
                 sampleNibble &= 0xf000;
                 sampleNibble >>= sample.shiftFactor;
 
-                float final = sampleNibble + ps_adpcm_coefs_f[sample.coefIndex][0] * hist1 + ps_adpcm_coefs_f[sample.coefIndex][1] * hist2;
+                int final = (int)(sampleNibble + ps_adpcm_coefs_f[sample.coefIndex][0] * hist1 + ps_adpcm_coefs_f[sample.coefIndex][1] * hist2);
+                //int final = sampleNibble + ((ps_adpcm_coefs_i[sample.coefIndex][0] * hist1 + ps_adpcm_coefs_i[sample.coefIndex][1] * hist2) >> 6);
+                final = Math.Clamp(final, short.MinValue, short.MaxValue);
                 audioStream[channelIndex + sampleIndex * wavel.ChannelCount] = final;
 
                 hist2 = hist1;
