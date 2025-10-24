@@ -924,6 +924,7 @@ public interface IXtType
     public string Name { get; }
     public int Size { get; }
     public IXtValue CreateValue();
+    public bool IsOfType(IXtType type);
 }
 public interface IXtCurryType : IXtType
 {
@@ -968,6 +969,11 @@ public class XtPointerType : IXtCurryType
     public override int GetHashCode()
     {
         return HashCode.Combine(BaseType.GetHashCode(), "*");
+    }
+
+    public bool IsOfType(IXtType type)
+    {
+        throw new NotImplementedException();
     }
 }
 public class XtPointerValue : IXtValue
@@ -1016,6 +1022,11 @@ public class XtHandleType : IXtCurryType
     {
         return HashCode.Combine(BaseType.GetHashCode(), "^");
     }
+
+    public bool IsOfType(IXtType type)
+    {
+        throw new NotImplementedException();
+    }
 }
 public class XtHandleValue : IXtValue
 {
@@ -1063,6 +1074,11 @@ public class XtArrayType : IXtCurryType
     public override int GetHashCode()
     {
         return HashCode.Combine(BaseType.GetHashCode(), "[]");
+    }
+
+    public bool IsOfType(IXtType type)
+    {
+        throw new NotImplementedException();
     }
 }
 public class XtArrayValue : IXtValue
@@ -1132,7 +1148,8 @@ public class XtStructType : IXtType
         Name = name;
         externalSize = size;
     }
-    public bool IsOfType(XtStructType type) => type == this ? true : Bases.Any(b => b.IsOfType(type));
+    public bool IsOfType(XtStructType type) => type.Name == Name ? true : Bases.Any(b => b.IsOfType(type));
+    public bool IsOfType(IXtType type) => type is XtStructType st && IsOfType(st);
     public IEnumerable<XtStructField> FullFields() => Bases.SelectMany(b => b.FullFields()).Concat(Fields);
 
     public IXtValue CreateValue()
@@ -1150,6 +1167,7 @@ public class XtStructType : IXtType
     public override string ToString() => Name;
     public override bool Equals(object? obj) => obj is XtStructType p && Name == p.Name;
     public override int GetHashCode() => Name.GetHashCode();
+
 }
 public class XtStructField
 {
@@ -1239,6 +1257,8 @@ public class XtEnumType : IXtType
     public override string ToString() => Name;
     public override bool Equals(object? obj) => obj is XtEnumType p && Name == p.Name;
     public override int GetHashCode() => Name.GetHashCode();
+
+    public bool IsOfType(IXtType type) => type is XtEnumType et && et.Name == Name;
 }
 public class XtEnumValue : IXtValue
 {
@@ -1371,6 +1391,8 @@ public class XtAtomType : IXtType
     public override string ToString() => Name;
     public override bool Equals(object? obj) => obj is XtAtomType p && Name == p.Name;
     public override int GetHashCode() => Name.GetHashCode();
+
+    public bool IsOfType(IXtType type) => type is XtAtomType at && at.AtomType == AtomType;
 }
 public class XtAtomValue<T> : IXtValue where T : notnull
 {
