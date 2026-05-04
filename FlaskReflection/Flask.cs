@@ -860,7 +860,7 @@ class XtBlock
 
     public void Add(IXtValue value)
     {
-        Debug.Assert(value.Type == BlockType, "Value does not fit in block.");
+        Debug.Assert(value.Type.Name == BlockType.Name, "Value does not fit in block.");
         Values.Add(value);
     }
 
@@ -925,6 +925,7 @@ public interface IXtType
     public int Size { get; }
     public IXtValue CreateValue();
     public bool IsOfType(IXtType type);
+    public bool IsOfType(string typeName);
 }
 public interface IXtCurryType : IXtType
 {
@@ -972,6 +973,11 @@ public class XtPointerType : IXtCurryType
     }
 
     public bool IsOfType(IXtType type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsOfType(string typeName)
     {
         throw new NotImplementedException();
     }
@@ -1027,6 +1033,11 @@ public class XtHandleType : IXtCurryType
     {
         throw new NotImplementedException();
     }
+
+    public bool IsOfType(string typeName)
+    {
+        throw new NotImplementedException();
+    }
 }
 public class XtHandleValue : IXtValue
 {
@@ -1077,6 +1088,11 @@ public class XtArrayType : IXtCurryType
     }
 
     public bool IsOfType(IXtType type)
+    {
+        throw new NotImplementedException();
+    }
+
+    public bool IsOfType(string typeName)
     {
         throw new NotImplementedException();
     }
@@ -1168,6 +1184,7 @@ public class XtStructType : IXtType
     public override bool Equals(object? obj) => obj is XtStructType p && Name == p.Name;
     public override int GetHashCode() => Name.GetHashCode();
 
+    public bool IsOfType(string typeName) => Name == typeName || Bases.Any(b => b.IsOfType(typeName));
 }
 public class XtStructField
 {
@@ -1259,6 +1276,8 @@ public class XtEnumType : IXtType
     public override int GetHashCode() => Name.GetHashCode();
 
     public bool IsOfType(IXtType type) => type is XtEnumType et && et.Name == Name;
+
+    public bool IsOfType(string typeName) => Name == typeName;
 }
 public class XtEnumValue : IXtValue
 {
@@ -1393,6 +1412,8 @@ public class XtAtomType : IXtType
     public override int GetHashCode() => Name.GetHashCode();
 
     public bool IsOfType(IXtType type) => type is XtAtomType at && at.AtomType == AtomType;
+
+    public bool IsOfType(string typeName) => Name == typeName;
 }
 public class XtAtomValue<T> : IXtValue where T : notnull
 {

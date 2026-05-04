@@ -8,19 +8,16 @@ using System.Text;
 namespace BlurFileFormats.SF2.Attributes
 {
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class ReadAttribute : Attribute
-    {
-    }
+    public class ReadAttribute : Attribute;
+
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class PositionOfAttribute : Attribute
+    public class ParameterAttribute : Attribute
     {
-        public PositionOfAttribute(string Path)
-        {
-            
-        }
+        public ParameterSource Source { get; set; }
     }
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class PositionAttribute : Attribute
+    public enum ParameterSource
     {
+        None,
+        ArrayIndex
     }
 }
