@@ -32,7 +32,7 @@ public static partial class CPModelSerializer
         var modelDataBlockHeader = BinaryReaderExtensions.ReadBlockHeader(reader);
 
         var modelDataHeaderBlockHeader = BinaryReaderExtensions.ReadBlockHeader(reader);
-        reader.ReadUInt32();
+        int modelVersion = reader.ReadInt32();
         uint modelCount = reader.ReadUInt32();
         uint elementCount = reader.ReadUInt32();
         uint constraintCount = reader.ReadUInt32();
@@ -330,6 +330,7 @@ public static partial class CPModelSerializer
     static BlockLod ReadBlockLod(this BinaryReader reader, int anchor)
     {
         reader.ReadArchHeader();
+
         reader.ReadArchHeader();
         var platformType = reader.ReadPlatformType();
         var lod = reader.ReadInt32();
@@ -580,6 +581,7 @@ public static partial class CPModelSerializer
     static LodTexture? ReadLodTexture(this BinaryReader reader, int lod, int anchor)
     {
         reader.ReadArchHeader();
+
         reader.ReadArchHeader();
         var platformType = reader.ReadPlatformType();
         string name = "";

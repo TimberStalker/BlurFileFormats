@@ -64,6 +64,12 @@ public static class BinaryReaderExtensions
         }
         return items;
     }
+    public static Vector2 ReadVector2(this BinaryReader reader)
+    {
+        float x = reader.ReadSingle();
+        float y = reader.ReadSingle();
+        return new Vector2(x, y);
+    }
     public static Vector3 ReadVector3(this BinaryReader reader)
     {
         float x = reader.ReadSingle();

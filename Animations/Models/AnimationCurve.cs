@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 
@@ -35,6 +36,80 @@ public class AnimationCurve
                 break;
             default:
                 throw new NotSupportedException();
+        }
+    }
+    public void InsertKey(int frame, object value)
+    {
+        int i;
+        bool replace = false;
+        for (i = 0; i < KeyTimes.Count; i++)
+        {
+            if (KeyTimes[i] >= frame)
+            {
+                replace = KeyTimes[i] == frame;
+                break;
+            }
+        }
+        switch (Keys)
+        {
+            case AnimationFloatCurveKeys floatCurve:
+                var floatValue = (float)value;
+                KeyTimes.Add(frame);
+                if(replace)
+                {
+                    floatCurve.Keys[i] = floatValue;
+                }
+                else
+                {
+                    floatCurve.Keys.Insert(i, floatValue);
+                }
+                break;
+            case AnimationVector3CurveKeys vec3Curve:
+                var vecValue = (Vector3)value;
+                KeyTimes.Add(frame);
+                if (replace)
+                {
+                    vec3Curve.Keys[i] = vecValue;
+                }
+                else
+                {
+                    vec3Curve.Keys.Insert(i, vecValue);
+                }
+                break;
+            case AnimationQuaternionCurveKeys quaternionCurve:
+                var quatValue = (Quaternion)value;
+                KeyTimes.Add(frame);
+                if (replace)
+                {
+                    quaternionCurve.Keys[i] = quatValue;
+                }
+                else
+                {
+                    quaternionCurve.Keys.Insert(i, quatValue);
+                }
+                break;
+        }
+    }
+    public void AddKey(int frame, object value)
+    {
+        Debug.Assert(KeyTimes[^1] < frame);
+        switch (Keys)
+        {
+            case AnimationFloatCurveKeys floatCurve:
+                var floatValue = (float)value;
+                KeyTimes.Add(frame);
+                floatCurve.Keys.Add(floatValue);
+                break;
+            case AnimationVector3CurveKeys vec3Curve:
+                var vecValue = (Vector3)value;
+                KeyTimes.Add(frame);
+                vec3Curve.Keys.Add(vecValue);
+                break;
+            case AnimationQuaternionCurveKeys quaternionCurve:
+                var quatValue = (Quaternion)value;
+                KeyTimes.Add(frame);
+                quaternionCurve.Keys.Add(quatValue);
+                break;
         }
     }
 }
